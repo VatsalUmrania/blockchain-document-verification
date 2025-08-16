@@ -30,7 +30,6 @@ class DocumentService {
         
         if (normalizedKey !== key && normalizedKey.length === 64) {
           // This is a 0x-prefixed key that needs migration
-          console.log(`🔄 Migrating key: ${key} → ${normalizedKey}`);
           migratedDocs[normalizedKey] = {
             ...doc,
             hash: normalizedKey, // Update hash field too
@@ -47,7 +46,6 @@ class DocumentService {
       
       if (migrated) {
         localStorage.setItem('docverify_documents', JSON.stringify(migratedDocs));
-        console.log('✅ Document keys migrated successfully');
         
         // Dispatch event to refresh stats
         window.dispatchEvent(new CustomEvent('documentStatsChanged', {
@@ -70,17 +68,15 @@ class DocumentService {
       // Auto-migrate on first access
       const hasOldKeys = Object.keys(documents).some(key => key.startsWith('0x'));
       if (hasOldKeys) {
-        console.log('🔄 Auto-migrating old document keys...');
         this.migrateDocumentKeys();
         // Re-read after migration
         const migratedStored = localStorage.getItem('docverify_documents');
         return migratedStored ? JSON.parse(migratedStored) : {};
       }
       
-      console.log('📋 Retrieved documents from localStorage:', Object.keys(documents));
       return documents;
     } catch (error) {
-      console.error('Error retrieving stored documents:', error);
+      console.error('❌ Error retrieving stored documents:', error);
       return {};
     }
   }
@@ -89,13 +85,8 @@ class DocumentService {
     const normalizedHash = normalizeHash(documentHash);
     const documents = this.getStoredDocuments();
     
-    console.log('🔍 getDocumentStatus called with:', documentHash);
-    console.log('🔍 Normalized to:', normalizedHash);
-    console.log('📋 Available document hashes:', Object.keys(documents));
-    
     // Direct lookup with normalized hash
     if (documents[normalizedHash]) {
-      console.log('✅ Found document with normalized hash');
       return {
         exists: true,
         status: documents[normalizedHash].status,
@@ -107,7 +98,6 @@ class DocumentService {
     for (const [storedHash, doc] of Object.entries(documents)) {
       const normalizedStoredHash = normalizeHash(storedHash);
       if (normalizedStoredHash === normalizedHash) {
-        console.log('✅ Found document after normalizing stored key');
         return {
           exists: true,
           status: doc.status,
@@ -116,7 +106,6 @@ class DocumentService {
       }
     }
     
-    console.log('❌ No document found for hash:', normalizedHash);
     return {
       exists: false,
       status: null,
@@ -127,10 +116,6 @@ class DocumentService {
   markDocumentVerified(documentHash, verificationData = {}) {
     const normalizedHash = normalizeHash(documentHash);
     const documents = this.getStoredDocuments();
-    
-    console.log('🔄 markDocumentVerified called with:', documentHash);
-    console.log('🔄 Normalized to:', normalizedHash);
-    console.log('📋 Available documents:', Object.keys(documents));
     
     // Try to find the document
     let foundKey = null;
@@ -156,8 +141,6 @@ class DocumentService {
       console.error('❌ Document not found for hash:', normalizedHash);
       return false;
     }
-
-    console.log('📄 Document BEFORE update:', foundDoc);
     
     // Update the document (always store with normalized key)
     const normalizedKey = normalizeHash(foundKey);
@@ -179,8 +162,6 @@ class DocumentService {
         ...verificationData
       }
     };
-
-    console.log('📄 Document AFTER update:', documents[normalizedKey]);
     
     try {
       localStorage.setItem('docverify_documents', JSON.stringify(documents));
@@ -189,8 +170,6 @@ class DocumentService {
       window.dispatchEvent(new CustomEvent('documentStatsChanged', {
         detail: { action: 'verify', hash: normalizedKey }
       }));
-      
-      console.log('✅ Document marked as verified and event dispatched');
       
       return true;
     } catch (error) {
@@ -202,8 +181,6 @@ class DocumentService {
   async storeDocumentAsPending(fileContent, fileName, metadata = {}) {
     const documentHash = this.createDocumentHash(fileContent, fileName, metadata);
     const normalizedHash = normalizeHash(documentHash); // Always normalize
-    
-    console.log('📤 Storing document with normalized hash:', normalizedHash);
     
     const documents = this.getStoredDocuments();
     
@@ -223,88 +200,103 @@ class DocumentService {
       retryable: true
     };
 
-    localStorage.setItem('docverify_documents', JSON.stringify(documents));
-    
-    // Dispatch custom event
-    window.dispatchEvent(new CustomEvent('documentStatsChanged', {
-      detail: { action: 'store', hash: normalizedHash }
-    }));
-
-    console.log(`📄 Document stored as pending: ${fileName} (${normalizedHash})`);
-    
-    return {
-      success: true,
-      documentHash: normalizedHash,
-      status: 'pending'
-    };
+    try {
+      localStorage.setItem('docverify_documents', JSON.stringify(documents));
+      
+      // Dispatch custom event
+      window.dispatchEvent(new CustomEvent('documentStatsChanged', {
+        detail: { action: 'store', hash: normalizedHash }
+      }));
+      
+      return {
+        success: true,
+        documentHash: normalizedHash,
+        status: 'pending'
+      };
+    } catch (error) {
+      console.error('❌ Failed to store document:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 
   getDocumentStats() {
-    const documents = this.getStoredDocuments();
-    const documentArray = Object.values(documents);
-    
-    console.log('📊 Computing stats for documents:', documentArray.length);
-    console.log('📊 Document statuses:', documentArray.map(d => ({ 
-      name: d.fileName, 
-      status: d.status,
-      hash: d.hash?.substring(0, 10) + '...'
-    })));
-    
-    const stats = {
-      totalDocuments: documentArray.length,
-      verifiedDocuments: documentArray.filter(doc => doc.status === 'verified').length,
-      pendingDocuments: documentArray.filter(doc => doc.status === 'pending').length,
-      totalVerifications: documentArray.filter(doc => doc.status === 'verified').length
-    };
+    try {
+      const documents = this.getStoredDocuments();
+      const documentArray = Object.values(documents);
+      
+      const stats = {
+        totalDocuments: documentArray.length,
+        verifiedDocuments: documentArray.filter(doc => doc.status === 'verified').length,
+        pendingDocuments: documentArray.filter(doc => doc.status === 'pending').length,
+        totalVerifications: documentArray.filter(doc => doc.status === 'verified').length
+      };
 
-    console.log('📊 Computed stats:', stats);
-    return stats;
+      return stats;
+    } catch (error) {
+      console.error('❌ Error computing document stats:', error);
+      return {
+        totalDocuments: 0,
+        verifiedDocuments: 0,
+        pendingDocuments: 0,
+        totalVerifications: 0
+      };
+    }
   }
 
   async verifyDocument(fileContent, fileName) {
-    const documentHash = this.createDocumentHash(fileContent, fileName);
-    const normalizedHash = normalizeHash(documentHash);
-    const documents = this.getStoredDocuments();
-    
-    console.log('🔍 verifyDocument called with generated hash:', normalizedHash);
-    
-    // Direct lookup
-    if (documents[normalizedHash]) {
-      console.log('✅ Document found in verifyDocument (direct)');
-      return {
-        isValid: true,
-        status: documents[normalizedHash].status,
-        documentData: documents[normalizedHash],
-        verificationTime: Date.now(),
-        blockchainStored: documents[normalizedHash].blockchainStored,
-        transactionHash: documents[normalizedHash].transactionHash
-      };
-    }
-    
-    // Search through all documents
-    for (const [storedHash, doc] of Object.entries(documents)) {
-      const normalizedStoredHash = normalizeHash(storedHash);
-      if (normalizedStoredHash === normalizedHash) {
-        console.log('✅ Document found in verifyDocument (search)');
+    try {
+      const documentHash = this.createDocumentHash(fileContent, fileName);
+      const normalizedHash = normalizeHash(documentHash);
+      const documents = this.getStoredDocuments();
+      
+      // Direct lookup
+      if (documents[normalizedHash]) {
         return {
           isValid: true,
-          status: doc.status,
-          documentData: doc,
+          status: documents[normalizedHash].status,
+          documentData: documents[normalizedHash],
           verificationTime: Date.now(),
-          blockchainStored: doc.blockchainStored,
-          transactionHash: doc.transactionHash
+          blockchainStored: documents[normalizedHash].blockchainStored,
+          transactionHash: documents[normalizedHash].transactionHash
         };
       }
+      
+      // Search through all documents
+      for (const [storedHash, doc] of Object.entries(documents)) {
+        const normalizedStoredHash = normalizeHash(storedHash);
+        if (normalizedStoredHash === normalizedHash) {
+          return {
+            isValid: true,
+            status: doc.status,
+            documentData: doc,
+            verificationTime: Date.now(),
+            blockchainStored: doc.blockchainStored,
+            transactionHash: doc.transactionHash
+          };
+        }
+      }
+      
+      return {
+        isValid: false,
+        status: 'not_found',
+        documentData: null,
+        verificationTime: Date.now(),
+        blockchainStored: false
+      };
+    } catch (error) {
+      console.error('❌ Error verifying document:', error);
+      return {
+        isValid: false,
+        status: 'error',
+        documentData: null,
+        verificationTime: Date.now(),
+        blockchainStored: false,
+        error: error.message
+      };
     }
-    
-    console.log('❌ Document not found in verifyDocument');
-    return {
-      isValid: false,
-      status: 'not_found',
-      documentData: null,
-      verificationTime: Date.now(),
-      blockchainStored: false
-    };
   }
 
   // Method to manually clean up old 0x-prefixed keys
@@ -331,7 +323,6 @@ class DocumentService {
       
       if (cleaned) {
         localStorage.setItem('docverify_documents', JSON.stringify(documents));
-        console.log('✅ Old keys cleaned up successfully');
         
         window.dispatchEvent(new CustomEvent('documentStatsChanged', {
           detail: { action: 'cleanup' }
@@ -345,64 +336,166 @@ class DocumentService {
     }
   }
 
-  // Rest of methods remain the same...
   getRecentActivity(limit = 10) {
-    const documents = this.getStoredDocuments();
-    const activities = [];
-    
-    Object.values(documents).forEach((doc, index) => {
-      if (!doc || !doc.fileName) return; // Skip invalid documents
+    try {
+      const documents = this.getStoredDocuments();
+      const activities = [];
       
-      const activity = {
-        id: doc.transactionHash || doc.hash || `activity_${index}_${Date.now()}`,
-        type: doc.status === 'verified' ? 'verification' : 'upload',
-        message: doc.status === 'verified' 
-          ? `Document "${doc.fileName}" verified successfully`
-          : `Document "${doc.fileName}" uploaded (pending verification)`,
-        timestamp: doc.verifiedAt || doc.timestamp || Date.now(),
-        hash: (doc.transactionHash || doc.hash || '').substring(0, 10) + '...',
-        status: doc.status,
-        localOnly: doc.localOnly || false,
-        blockchainStored: doc.blockchainStored || false
-      };
+      Object.values(documents).forEach((doc, index) => {
+        if (!doc || !doc.fileName) return; // Skip invalid documents
+        
+        const activity = {
+          id: doc.transactionHash || doc.hash || `activity_${index}_${Date.now()}`,
+          type: doc.status === 'verified' ? 'verification' : 'upload',
+          message: doc.status === 'verified' 
+            ? `Document "${doc.fileName}" verified successfully`
+            : `Document "${doc.fileName}" uploaded (pending verification)`,
+          timestamp: doc.verifiedAt || doc.timestamp || Date.now(),
+          hash: (doc.transactionHash || doc.hash || '').substring(0, 10) + '...',
+          status: doc.status,
+          localOnly: doc.localOnly || false,
+          blockchainStored: doc.blockchainStored || false
+        };
+        
+        activities.push(activity);
+      });
       
-      activities.push(activity);
-    });
-    
-    return activities
-      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-      .slice(0, limit);
+      return activities
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+        .slice(0, limit);
+    } catch (error) {
+      console.error('❌ Error getting recent activity:', error);
+      return [];
+    }
   }
 
   findDocumentByHash(searchHash) {
-    const normalizedSearchHash = normalizeHash(searchHash);
-    const documents = this.getStoredDocuments();
-    
-    // Direct lookup first
-    if (documents[normalizedSearchHash]) {
-      return documents[normalizedSearchHash];
-    }
-    
-    // Search all keys
-    for (const [storedHash, doc] of Object.entries(documents)) {
-      const normalizedStoredHash = normalizeHash(storedHash);
-      if (normalizedStoredHash === normalizedSearchHash) {
-        return doc;
+    try {
+      const normalizedSearchHash = normalizeHash(searchHash);
+      const documents = this.getStoredDocuments();
+      
+      // Direct lookup first
+      if (documents[normalizedSearchHash]) {
+        return documents[normalizedSearchHash];
       }
+      
+      // Search all keys
+      for (const [storedHash, doc] of Object.entries(documents)) {
+        const normalizedStoredHash = normalizeHash(storedHash);
+        if (normalizedStoredHash === normalizedSearchHash) {
+          return doc;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ Error finding document by hash:', error);
+      return null;
     }
-    
-    return null;
   }
 
   clearAllDocuments() {
-    localStorage.removeItem('docverify_documents');
-    window.dispatchEvent(new CustomEvent('documentStatsChanged', {
-      detail: { action: 'clear' }
-    }));
-    console.log('🧹 All documents cleared from storage');
+    try {
+      localStorage.removeItem('docverify_documents');
+      window.dispatchEvent(new CustomEvent('documentStatsChanged', {
+        detail: { action: 'clear' }
+      }));
+    } catch (error) {
+      console.error('❌ Error clearing documents:', error);
+    }
   }
-  
-}
 
+  // Additional utility methods for better error handling
+  isStorageAvailable() {
+    try {
+      const test = '__storage_test__';
+      localStorage.setItem(test, test);
+      localStorage.removeItem(test);
+      return true;
+    } catch (error) {
+      console.error('❌ localStorage not available:', error);
+      return false;
+    }
+  }
+
+  getStorageInfo() {
+    try {
+      if (!this.isStorageAvailable()) {
+        return { available: false, used: 0, total: 0 };
+      }
+
+      const documents = this.getStoredDocuments();
+      const jsonString = JSON.stringify(documents);
+      const used = new Blob([jsonString]).size;
+      
+      return {
+        available: true,
+        used: used,
+        documentCount: Object.keys(documents).length,
+        approximateTotal: 5 * 1024 * 1024 // ~5MB localStorage limit
+      };
+    } catch (error) {
+      console.error('❌ Error getting storage info:', error);
+      return { available: false, used: 0, total: 0 };
+    }
+  }
+
+  // Validate document integrity
+  validateDocument(document) {
+    try {
+      if (!document) return false;
+      if (!document.hash || !document.fileName) return false;
+      if (!document.timestamp) return false;
+      if (!document.status || !['pending', 'verified', 'failed'].includes(document.status)) return false;
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Error validating document:', error);
+      return false;
+    }
+  }
+
+  // Repair corrupted documents
+  repairDocuments() {
+    try {
+      const documents = this.getStoredDocuments();
+      let repaired = false;
+      
+      for (const [hash, doc] of Object.entries(documents)) {
+        if (!this.validateDocument(doc)) {
+          // Try to repair common issues
+          const repairedDoc = {
+            ...doc,
+            hash: doc.hash || hash,
+            fileName: doc.fileName || 'Unknown Document',
+            timestamp: doc.timestamp || Date.now(),
+            status: doc.status || 'pending'
+          };
+          
+          if (this.validateDocument(repairedDoc)) {
+            documents[hash] = repairedDoc;
+            repaired = true;
+          } else {
+            // Remove irreparable documents
+            delete documents[hash];
+            repaired = true;
+          }
+        }
+      }
+      
+      if (repaired) {
+        localStorage.setItem('docverify_documents', JSON.stringify(documents));
+        window.dispatchEvent(new CustomEvent('documentStatsChanged', {
+          detail: { action: 'repair' }
+        }));
+      }
+      
+      return repaired;
+    } catch (error) {
+      console.error('❌ Error repairing documents:', error);
+      return false;
+    }
+  }
+}
 
 export default DocumentService;

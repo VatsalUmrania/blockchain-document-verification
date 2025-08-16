@@ -5,7 +5,12 @@ import { toast } from 'react-toastify';
 import { 
   BugAntIcon, 
   DocumentTextIcon,
-  ClipboardDocumentCheckIcon 
+  ClipboardDocumentCheckIcon,
+  BeakerIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClipboardIcon
 } from '@heroicons/react/24/outline';
 import Button from '../common/Button';
 import { generateDocumentHash, verifyDocumentHash } from '../../services/hashService';
@@ -26,9 +31,19 @@ const HashDebugger = () => {
     }
   };
 
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('📋 Hash copied to clipboard!', {
+        icon: '📋'
+      });
+    }).catch(() => {
+      toast.error('❌ Failed to copy hash');
+    });
+  };
+
   const debugHash = async () => {
     if (!file1) {
-      toast.error('Please select a file to debug');
+      toast.error('❌ Please select a file to debug');
       return;
     }
 
@@ -62,197 +77,286 @@ const HashDebugger = () => {
         comparison: comparisonResult
       });
 
-      toast.success('Debug analysis completed!');
+      toast.success('🔍 Debug analysis completed!', {
+        icon: '🔬'
+      });
     } catch (error) {
       console.error('Debug error:', error);
-      toast.error(`Debug failed: ${error.message}`);
+      toast.error(`❌ Debug failed: ${error.message}`);
     } finally {
       setIsDebugging(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-6"
+        className="space-y-8"
       >
+        {/* Header */}
         <div className="text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <BugAntIcon className="w-8 h-8 text-red-500" />
-            <h1 className="text-3xl font-bold text-gray-800">Hash Debugger</h1>
+            <div className="p-3 bg-[#FF4C4C]/20 rounded-full border border-[#FF4C4C]/30">
+              <BugAntIcon className="w-8 h-8 text-[#FF4C4C]" />
+            </div>
           </div>
-          <p className="text-gray-600">
-            Troubleshoot hash mismatch issues and analyze document hashing
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#FF4C4C] to-[#FF6B6B] bg-clip-text text-transparent mb-3">
+            Hash Debugger
+          </h1>
+          <p className="text-[#CCCCCC] text-lg max-w-2xl mx-auto">
+            Advanced troubleshooting tool for hash mismatch issues and document hashing analysis
           </p>
         </div>
 
+        {/* Configuration Card */}
         <div className="card">
-          <h2 className="text-xl font-semibold mb-4">Debug Configuration</h2>
+          <div className="flex items-center space-x-2 mb-6">
+            <BeakerIcon className="w-5 h-5 text-[#296CFF]" />
+            <h2 className="text-xl font-semibold text-white">Debug Configuration</h2>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Primary File */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Primary File (to debug)
+              <label className="block text-sm font-semibold text-white mb-3">
+                📄 Primary File (to debug)
               </label>
               <input
                 type="file"
                 onChange={(e) => handleFileSelect(1, e)}
                 className="input-field"
-                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt"
               />
               {file1 && (
-                <p className="text-sm text-green-600 mt-2">
-                  ✓ {file1.name} ({(file1.size / 1024 / 1024).toFixed(2)} MB)
-                </p>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-3 p-3 bg-[#00C853]/10 border border-[#00C853]/30 rounded-lg"
+                >
+                  <div className="flex items-center space-x-2">
+                    <CheckCircleIcon className="w-4 h-4 text-[#00C853]" />
+                    <span className="text-sm text-[#00C853] font-medium">
+                      {file1.name} ({(file1.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                </motion.div>
               )}
             </div>
 
+            {/* Comparison File */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Comparison File (optional)
+              <label className="block text-sm font-semibold text-white mb-3">
+                🔄 Comparison File (optional)
               </label>
               <input
                 type="file"
                 onChange={(e) => handleFileSelect(2, e)}
                 className="input-field"
-                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt"
               />
               {file2 && (
-                <p className="text-sm text-green-600 mt-2">
-                  ✓ {file2.name} ({(file2.size / 1024 / 1024).toFixed(2)} MB)
-                </p>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-3 p-3 bg-[#296CFF]/10 border border-[#296CFF]/30 rounded-lg"
+                >
+                  <div className="flex items-center space-x-2">
+                    <CheckCircleIcon className="w-4 h-4 text-[#296CFF]" />
+                    <span className="text-sm text-[#296CFF] font-medium">
+                      {file2.name} ({(file2.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                </motion.div>
               )}
             </div>
           </div>
 
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Expected Hash (for verification)
+          {/* Expected Hash Input */}
+          <div className="mt-6">
+            <label className="block text-sm font-semibold text-white mb-3">
+              🎯 Expected Hash (for verification)
             </label>
             <input
               type="text"
               value={expectedHash}
               onChange={(e) => setExpectedHash(e.target.value)}
-              placeholder="Enter the expected hash value..."
+              placeholder="Enter the expected hash value for comparison..."
               className="input-field font-mono text-sm"
             />
           </div>
 
-          <div className="mt-6">
+          {/* Debug Button */}
+          <div className="mt-8">
             <Button
               onClick={debugHash}
               loading={isDebugging}
               disabled={!file1}
-              className="w-full"
+              variant="danger"
+              className="w-full h-12 text-lg"
             >
-              🔍 Start Debug Analysis
+              {isDebugging ? (
+                <>🔬 Analyzing...</>
+              ) : (
+                <>🔍 Start Debug Analysis</>
+              )}
             </Button>
           </div>
         </div>
 
+        {/* Debug Results */}
         {debugResult && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
+            className="space-y-8"
           >
             {/* Hash Generation Results */}
             <div className="card">
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <DocumentTextIcon className="w-5 h-5 mr-2" />
-                Hash Generation Analysis
-              </h3>
+              <div className="flex items-center space-x-2 mb-6">
+                <DocumentTextIcon className="w-5 h-5 text-[#296CFF]" />
+                <h3 className="text-lg font-semibold text-white">Hash Generation Analysis</h3>
+              </div>
               
-              <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-700 mb-2">File Information</h4>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <div><strong>Name:</strong> {debugResult.hashGeneration.file.name}</div>
-                    <div><strong>Size:</strong> {debugResult.hashGeneration.file.size} bytes</div>
-                    <div><strong>Type:</strong> {debugResult.hashGeneration.file.type}</div>
+              <div className="space-y-6">
+                {/* File Information */}
+                <div className="bg-[#121212] rounded-xl p-4 border border-[#333333]">
+                  <h4 className="font-semibold text-[#E0E0E0] mb-3 flex items-center space-x-2">
+                    <DocumentTextIcon className="w-4 h-4 text-[#296CFF]" />
+                    <span>File Information</span>
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-[#CCCCCC]">
+                    <div><strong className="text-white">Name:</strong> {debugResult.hashGeneration.file.name}</div>
+                    <div><strong className="text-white">Size:</strong> {debugResult.hashGeneration.file.size.toLocaleString()} bytes</div>
+                    <div><strong className="text-white">Type:</strong> {debugResult.hashGeneration.file.type || 'Unknown'}</div>
                   </div>
                 </div>
 
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-800 mb-2">Generated Hashes</h4>
-                  <div className="space-y-2">
+                {/* Generated Hashes */}
+                <div className="bg-[#296CFF]/10 rounded-xl p-4 border border-[#296CFF]/30">
+                  <h4 className="font-semibold text-[#296CFF] mb-4">Generated Hashes</h4>
+                  <div className="space-y-4">
                     <div>
-                      <span className="text-sm font-medium text-blue-700">File Content Only:</span>
-                      <code className="block bg-white p-2 rounded font-mono text-xs mt-1 break-all">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-[#296CFF]">📄 File Content Hash:</span>
+                        <button
+                          onClick={() => copyToClipboard(debugResult.hashGeneration.hash)}
+                          className="p-1 text-[#666666] hover:text-[#296CFF] transition-colors"
+                        >
+                          <ClipboardIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <code className="block bg-[#0D0D0D] p-3 rounded-lg font-mono text-xs text-[#E0E0E0] break-all border border-[#333333]">
                         {debugResult.hashGeneration.hash}
                       </code>
                     </div>
-                    <div>
-                      <span className="text-sm font-medium text-blue-700">File + Metadata:</span>
-                      <code className="block bg-white p-2 rounded font-mono text-xs mt-1 break-all">
-                        {debugResult.hashGeneration.fullHash}
-                      </code>
-                    </div>
+                    {debugResult.hashGeneration.fullHash && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-[#296CFF]">📋 File + Metadata Hash:</span>
+                          <button
+                            onClick={() => copyToClipboard(debugResult.hashGeneration.fullHash)}
+                            className="p-1 text-[#666666] hover:text-[#296CFF] transition-colors"
+                          >
+                            <ClipboardIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <code className="block bg-[#0D0D0D] p-3 rounded-lg font-mono text-xs text-[#E0E0E0] break-all border border-[#333333]">
+                          {debugResult.hashGeneration.fullHash}
+                        </code>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-700 mb-2">Metadata Used in Hash</h4>
-                  <pre className="text-xs bg-white p-2 rounded overflow-auto">
-                    {JSON.stringify(debugResult.hashGeneration.metadata, null, 2)}
-                  </pre>
-                </div>
+                {/* Metadata */}
+                {debugResult.hashGeneration.metadata && (
+                  <div className="bg-[#8B5CF6]/10 rounded-xl p-4 border border-[#8B5CF6]/30">
+                    <h4 className="font-semibold text-[#8B5CF6] mb-3">Metadata Used in Hash</h4>
+                    <pre className="text-xs bg-[#0D0D0D] p-3 rounded-lg overflow-auto text-[#E0E0E0] border border-[#333333]">
+                      {JSON.stringify(debugResult.hashGeneration.metadata, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Verification Results */}
             {debugResult.verification && (
               <div className="card">
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <ClipboardDocumentCheckIcon className="w-5 h-5 mr-2" />
-                  Verification Analysis
-                </h3>
+                <div className="flex items-center space-x-2 mb-6">
+                  <ClipboardDocumentCheckIcon className="w-5 h-5 text-[#00C853]" />
+                  <h3 className="text-lg font-semibold text-white">Verification Analysis</h3>
+                </div>
 
-                <div className={`p-4 rounded-lg border-2 ${
+                <div className={`p-6 rounded-xl border-2 ${
                   debugResult.verification.isValid 
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-red-50 border-red-200'
+                    ? 'bg-[#00C853]/10 border-[#00C853]/30'
+                    : 'bg-[#FF4C4C]/10 border-[#FF4C4C]/30'
                 }`}>
-                  <div className="flex items-center space-x-2 mb-3">
+                  <div className="flex items-center justify-center space-x-3 mb-6">
                     {debugResult.verification.isValid ? (
-                      <span className="text-green-600 font-bold">✅ MATCH FOUND</span>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircleIcon className="w-6 h-6 text-[#00C853]" />
+                        <span className="text-[#00C853] font-bold text-xl">✅ MATCH FOUND</span>
+                      </div>
                     ) : (
-                      <span className="text-red-600 font-bold">❌ NO MATCH</span>
+                      <div className="flex items-center space-x-2">
+                        <XCircleIcon className="w-6 h-6 text-[#FF4C4C]" />
+                        <span className="text-[#FF4C4C] font-bold text-xl">❌ NO MATCH</span>
+                      </div>
                     )}
                     {debugResult.verification.matchingStrategy && (
-                      <span className="text-sm text-gray-600">
-                        (Strategy: {debugResult.verification.matchingStrategy})
+                      <span className="text-sm text-[#999999] bg-[#1A1A1A] px-2 py-1 rounded">
+                        Strategy: {debugResult.verification.matchingStrategy}
                       </span>
                     )}
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
+                    {/* Expected Hash */}
                     <div>
-                      <span className="text-sm font-medium">Expected Hash:</span>
-                      <code className="block bg-white p-2 rounded font-mono text-xs mt-1 break-all">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-white">🎯 Expected Hash:</span>
+                        <button
+                          onClick={() => copyToClipboard(debugResult.verification.expectedHash)}
+                          className="p-1 text-[#666666] hover:text-[#296CFF] transition-colors"
+                        >
+                          <ClipboardIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <code className="block bg-[#0D0D0D] p-3 rounded-lg font-mono text-xs text-[#E0E0E0] break-all border border-[#333333]">
                         {debugResult.verification.expectedHash}
                       </code>
                     </div>
 
+                    {/* Tested Strategies */}
                     {debugResult.verification.strategies && (
                       <div>
-                        <span className="text-sm font-medium">Tested Strategies:</span>
-                        <div className="mt-2 space-y-2">
+                        <span className="text-sm font-medium text-white mb-3 block">🧪 Tested Strategies:</span>
+                        <div className="space-y-3">
                           {debugResult.verification.strategies.map((strategy, index) => (
-                            <div key={index} className="bg-white p-2 rounded">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium">{strategy.name}</span>
-                                <span className={`px-2 py-1 rounded text-xs ${
-                                  strategy.hash === debugResult.verification.expectedHash
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {strategy.hash === debugResult.verification.expectedHash ? 'MATCH' : 'NO MATCH'}
-                                </span>
+                            <div key={index} className="bg-[#0D0D0D] p-4 rounded-lg border border-[#333333]">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium text-[#E0E0E0]">{strategy.name}</span>
+                                <div className="flex items-center space-x-2">
+                                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                    strategy.hash === debugResult.verification.expectedHash
+                                      ? 'bg-[#00C853]/20 text-[#00C853] border border-[#00C853]/30'
+                                      : 'bg-[#FF4C4C]/20 text-[#FF4C4C] border border-[#FF4C4C]/30'
+                                  }`}>
+                                    {strategy.hash === debugResult.verification.expectedHash ? '✅ MATCH' : '❌ NO MATCH'}
+                                  </span>
+                                  <button
+                                    onClick={() => copyToClipboard(strategy.hash)}
+                                    className="p-1 text-[#666666] hover:text-[#296CFF] transition-colors"
+                                  >
+                                    <ClipboardIcon className="w-3 h-3" />
+                                  </button>
+                                </div>
                               </div>
-                              <code className="text-xs text-gray-600 break-all">
+                              <code className="text-xs text-[#999999] break-all font-mono">
                                 {strategy.hash}
                               </code>
                             </div>
@@ -268,36 +372,70 @@ const HashDebugger = () => {
             {/* File Comparison Results */}
             {debugResult.comparison && (
               <div className="card">
-                <h3 className="text-lg font-semibold mb-4">File Comparison</h3>
+                <h3 className="text-lg font-semibold text-white mb-6 flex items-center space-x-2">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-[#FF9800]" />
+                  <span>File Comparison Analysis</span>
+                </h3>
                 
-                <div className={`p-4 rounded-lg border-2 ${
+                <div className={`p-6 rounded-xl border-2 ${
                   debugResult.comparison.identical
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-orange-50 border-orange-200'
+                    ? 'bg-[#00C853]/10 border-[#00C853]/30'
+                    : 'bg-[#FF9800]/10 border-[#FF9800]/30'
                 }`}>
-                  <div className="text-center mb-4">
+                  <div className="text-center mb-6">
                     {debugResult.comparison.identical ? (
-                      <span className="text-green-600 font-bold">✅ FILES ARE IDENTICAL</span>
+                      <div className="flex items-center justify-center space-x-2">
+                        <CheckCircleIcon className="w-6 h-6 text-[#00C853]" />
+                        <span className="text-[#00C853] font-bold text-xl">✅ FILES ARE IDENTICAL</span>
+                      </div>
                     ) : (
-                      <span className="text-orange-600 font-bold">⚠️ FILES ARE DIFFERENT</span>
+                      <div className="flex items-center justify-center space-x-2">
+                        <ExclamationTriangleIcon className="w-6 h-6 text-[#FF9800]" />
+                        <span className="text-[#FF9800] font-bold text-xl">⚠️ FILES ARE DIFFERENT</span>
+                      </div>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* File 1 */}
                     <div>
-                      <h4 className="font-medium mb-2">File 1</h4>
-                      <div className="bg-white p-3 rounded text-sm">
-                        <div><strong>Name:</strong> {debugResult.comparison.file1.name}</div>
-                        <div><strong>Hash:</strong></div>
-                        <code className="text-xs break-all">{debugResult.comparison.file1Hash}</code>
+                      <h4 className="font-semibold text-white mb-3 flex items-center space-x-2">
+                        <DocumentTextIcon className="w-4 h-4 text-[#296CFF]" />
+                        <span>File 1</span>
+                      </h4>
+                      <div className="bg-[#0D0D0D] p-4 rounded-lg text-sm border border-[#333333]">
+                        <div className="mb-2"><strong className="text-white">Name:</strong> <span className="text-[#CCCCCC]">{debugResult.comparison.file1.name}</span></div>
+                        <div className="mb-2"><strong className="text-white">Hash:</strong></div>
+                        <div className="flex items-center justify-between">
+                          <code className="text-xs break-all text-[#E0E0E0] flex-1 mr-2">{debugResult.comparison.file1Hash}</code>
+                          <button
+                            onClick={() => copyToClipboard(debugResult.comparison.file1Hash)}
+                            className="p-1 text-[#666666] hover:text-[#296CFF] transition-colors"
+                          >
+                            <ClipboardIcon className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
+
+                    {/* File 2 */}
                     <div>
-                      <h4 className="font-medium mb-2">File 2</h4>
-                      <div className="bg-white p-3 rounded text-sm">
-                        <div><strong>Name:</strong> {debugResult.comparison.file2.name}</div>
-                        <div><strong>Hash:</strong></div>
-                        <code className="text-xs break-all">{debugResult.comparison.file2Hash}</code>
+                      <h4 className="font-semibold text-white mb-3 flex items-center space-x-2">
+                        <DocumentTextIcon className="w-4 h-4 text-[#00C853]" />
+                        <span>File 2</span>
+                      </h4>
+                      <div className="bg-[#0D0D0D] p-4 rounded-lg text-sm border border-[#333333]">
+                        <div className="mb-2"><strong className="text-white">Name:</strong> <span className="text-[#CCCCCC]">{debugResult.comparison.file2.name}</span></div>
+                        <div className="mb-2"><strong className="text-white">Hash:</strong></div>
+                        <div className="flex items-center justify-between">
+                          <code className="text-xs break-all text-[#E0E0E0] flex-1 mr-2">{debugResult.comparison.file2Hash}</code>
+                          <button
+                            onClick={() => copyToClipboard(debugResult.comparison.file2Hash)}
+                            className="p-1 text-[#666666] hover:text-[#296CFF] transition-colors"
+                          >
+                            <ClipboardIcon className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

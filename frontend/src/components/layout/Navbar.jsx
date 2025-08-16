@@ -1,188 +1,5 @@
-// // import React from 'react';
-// // import { motion } from 'framer-motion';
-// // import { DocumentCheckIcon } from '@heroicons/react/24/outline';
-// // import WalletConnect from '../wallet/WalletConnect';
-
-// // const Navbar = ({ activeTab, setActiveTab }) => {
-// //   const tabs = [
-// //     { id: 'dashboard', label: 'Dashboard' },
-// //     { id: 'upload', label: 'Upload Documents' },
-// //     { id: 'verify', label: 'Verify Documents' },
-// //     { id: 'analytics', label: 'Analytics' },
-// //   ];
-
-// //   return (
-// //     <motion.nav
-// //       initial={{ opacity: 0, y: -20 }}
-// //       animate={{ opacity: 1, y: 0 }}
-// //       className="bg-white shadow-lg border-b border-gray-200"
-// //     >
-// //       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-// //         <div className="flex justify-between items-center h-16">
-// //           {/* Logo Section */}
-// //           <div className="flex items-center space-x-3">
-// //             <DocumentCheckIcon className="w-8 h-8 text-primary-500" />
-// //             <h1 className="text-xl font-bold text-gray-800">DocVerify</h1>
-// //           </div>
-
-// //           {/* Tab Navigation */}
-// //           <div className="flex items-center space-x-6">
-// //             <nav className="hidden md:flex space-x-6">
-// //               {tabs.map((tab) => (
-// //                 <button
-// //                   key={tab.id}
-// //                   onClick={() => setActiveTab(tab.id)}
-// //                   className={`text-sm font-medium transition-colors duration-200 ${
-// //                     activeTab === tab.id
-// //                       ? 'text-blue-600 border-b-2 border-blue-500'
-// //                       : 'text-gray-600 hover:text-primary-500'
-// //                   }`}
-// //                 >
-// //                   {tab.label}
-// //                 </button>
-// //               ))}
-// //             </nav>
-
-// //             <WalletConnect />
-// //           </div>
-// //         </div>
-// //       </div>
-// //     </motion.nav>
-// //   );
-// // };
-
-// // export default Navbar;
-
-
-// import React, { useState } from 'react';
-// import { motion } from 'framer-motion';
-// import { 
-//   DocumentCheckIcon,
-//   HomeIcon,
-//   CloudArrowUpIcon,
-//   ShieldCheckIcon,
-//   ChartBarIcon,
-//   Bars3Icon,
-//   XMarkIcon
-// } from '@heroicons/react/24/outline';
-// import WalletConnect from '../wallet/WalletConnect';
-
-// const Navbar = ({ activeTab, setActiveTab }) => {
-//   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-//   const tabs = [
-//     { id: 'dashboard', label: 'Dashboard', icon: HomeIcon },
-//     { id: 'upload', label: 'Upload Documents', icon: CloudArrowUpIcon },
-//     { id: 'verify', label: 'Verify Documents', icon: ShieldCheckIcon },
-//     { id: 'analytics', label: 'Analytics', icon: ChartBarIcon },
-//   ];
-
-//   return (
-//     <motion.nav
-//       initial={{ opacity: 0, y: -20 }}
-//       animate={{ opacity: 1, y: 0 }}
-//       className="header bg-surface/95 backdrop-blur-md shadow-lg border-b border-primary-500/20"
-//     >
-//       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-//         <div className="flex justify-between items-center h-16">
-//           {/* Logo Section */}
-//           <div className="flex items-center space-x-3">
-//             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-accent-500/20 to-primary-500/20 border border-accent-400/30">
-//               <DocumentCheckIcon className="w-6 h-6 text-accent-400" />
-//             </div>
-//             <div className="flex flex-col">
-//               <h1 className="text-lg font-semibold text-foreground">DocVerify</h1>
-//               <p className="text-xs text-gray-400 -mt-1">Blockchain Security</p>
-//             </div>
-//           </div>
-
-//           {/* Desktop Navigation */}
-//           <div className="flex items-center space-x-8">
-//             <nav className="hidden md:flex items-center space-x-1">
-//               {tabs.map((tab) => {
-//                 const IconComponent = tab.icon;
-//                 return (
-//                   <motion.button
-//                     key={tab.id}
-//                     onClick={() => setActiveTab(tab.id)}
-//                     whileHover={{ y: -1 }}
-//                     whileTap={{ scale: 0.98 }}
-//                     className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
-//                       activeTab === tab.id
-//                         ? 'bg-accent-500/15 text-accent-400 border border-accent-400/30'
-//                         : 'text-gray-300 hover:text-accent-400 hover:bg-primary-500/10'
-//                     }`}
-//                   >
-//                     <IconComponent className="w-4 h-4" />
-//                     <span className="hidden lg:block">{tab.label}</span>
-//                     <span className="lg:hidden">{tab.label.split(' ')[0]}</span>
-//                   </motion.button>
-//                 );
-//               })}
-//             </nav>
-
-//             {/* Mobile Menu Button */}
-//             <motion.button
-//               whileHover={{ scale: 1.05 }}
-//               whileTap={{ scale: 0.95 }}
-//               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-//               className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-primary-500/20 border border-primary-400/30 text-primary-400 hover:bg-primary-500/30 transition-all duration-200"
-//             >
-//               {isMobileMenuOpen ? (
-//                 <XMarkIcon className="w-5 h-5" />
-//               ) : (
-//                 <Bars3Icon className="w-5 h-5" />
-//               )}
-//             </motion.button>
-
-//             <WalletConnect />
-//           </div>
-//         </div>
-
-//         {/* Mobile Navigation Menu */}
-//         <motion.div
-//           initial={{ height: 0, opacity: 0 }}
-//           animate={{ 
-//             height: isMobileMenuOpen ? 'auto' : 0, 
-//             opacity: isMobileMenuOpen ? 1 : 0 
-//           }}
-//           className="md:hidden overflow-hidden border-t border-primary-500/20"
-//         >
-//           <div className="py-4 space-y-2">
-//             {tabs.map((tab) => {
-//               const IconComponent = tab.icon;
-//               return (
-//                 <motion.button
-//                   key={tab.id}
-//                   onClick={() => {
-//                     setActiveTab(tab.id);
-//                     setIsMobileMenuOpen(false);
-//                   }}
-//                   whileHover={{ x: 4 }}
-//                   className={`flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-left transition-all duration-200 ${
-//                     activeTab === tab.id
-//                       ? 'bg-accent-500/15 text-accent-400 border border-accent-400/30'
-//                       : 'text-gray-300 hover:text-accent-400 hover:bg-primary-500/10'
-//                   }`}
-//                 >
-//                   <IconComponent className="w-5 h-5" />
-//                   <span className="font-medium">{tab.label}</span>
-//                 </motion.button>
-//               );
-//             })}
-//           </div>
-//         </motion.div>
-//       </div>
-//     </motion.nav>
-//   );
-// };
-
-// export default Navbar;
-
-
-// components/layout/Navbar.jsx (Updated with proper routing)
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom'; // Add useLocation
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Bars3Icon, 
@@ -191,16 +8,19 @@ import {
   CloudArrowUpIcon,
   ShieldCheckIcon,
   ChartBarIcon,
-  CubeTransparentIcon
+  CubeTransparentIcon,
+  WalletIcon,
+  LinkIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { useWeb3 } from '../../context/Web3Context';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation(); // Get current location
+  const location = useLocation();
   const { isConnected, account, connectWallet, disconnectWallet } = useWeb3();
 
-  // Navigation items with proper paths
+  // Navigation items with proper paths and icons
   const navigationItems = [
     { name: 'Dashboard', path: '/', icon: ChartBarIcon },
     { name: 'Upload Documents', path: '/upload', icon: CloudArrowUpIcon },
@@ -214,37 +34,36 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md border-b border-primary-500/20">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1A1A1A] border-b border-[#333333] shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-accent-500 to-secondary-400 rounded-lg">
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="p-2 bg-gradient-to-r from-[#296CFF] to-[#2979FF] rounded-lg shadow-lg shadow-[#296CFF]/30 group-hover:shadow-[#296CFF]/50 transition-all duration-300">
                 <CubeTransparentIcon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-accent-400 to-secondary-400 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-[#296CFF] to-[#2979FF] bg-clip-text text-transparent">
                   DocVerify
                 </h1>
-                <p className="text-xs text-muted-400">Blockchain Security</p>
               </div>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
+            <div className="ml-10 flex items-baseline space-x-2">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link
                     key={item.name}
                     to={item.path}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2 ${
                       isActivePath(item.path)
-                        ? 'bg-accent-500/20 text-accent-400 border border-accent-400/30'
-                        : 'text-muted-300 hover:text-foreground hover:bg-primary-500/10'
+                        ? 'bg-[#296CFF] text-white shadow-lg shadow-[#296CFF]/30 border border-[#2979FF]'
+                        : 'text-[#E0E0E0] hover:text-white hover:bg-[#2A2A2A] border border-transparent hover:border-[#333333]'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -260,24 +79,30 @@ const Navbar = () => {
             {isConnected ? (
               <div className="flex items-center space-x-3">
                 <div className="hidden sm:block">
-                  <div className="text-xs text-muted-400">Connected</div>
-                  <div className="blockchain-address text-sm">
-                    {account.substring(0, 6)}...{account.substring(account.length - 4)}
+                  <div className="flex items-center space-x-2 text-xs text-[#999999]">
+                    <LinkIcon className="w-3 h-3 text-[#00C853]" />
+                    <span>Connected</span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-sm bg-[#001A4D] text-[#296CFF] px-2 py-1 rounded border border-[#296CFF] font-mono">
+                    <WalletIcon className="w-3 h-3" />
+                    <span>{account.substring(0, 6)}...{account.substring(account.length - 4)}</span>
                   </div>
                 </div>
                 <button
                   onClick={disconnectWallet}
-                  className="btn-outline text-sm px-3 py-2"
+                  className="text-sm px-3 py-2 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-[#E0E0E0] hover:text-white border border-[#333333] hover:border-[#FF4C4C] rounded-lg transition-all duration-300 flex items-center space-x-1"
                 >
-                  Disconnect
+                  <XMarkIcon className="w-4 h-4" />
+                  <span>Disconnect</span>
                 </button>
               </div>
             ) : (
               <button
                 onClick={connectWallet}
-                className="btn-primary text-sm px-4 py-2"
+                className="btn-primary text-sm px-4 py-2 flex items-center space-x-2"
               >
-                Connect Wallet
+                <WalletIcon className="w-4 h-4" />
+                <span>Connect Wallet</span>
               </button>
             )}
 
@@ -285,7 +110,7 @@ const Navbar = () => {
             <div className="md:hidden">
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-muted-300 hover:text-foreground hover:bg-primary-500/10 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                className="inline-flex items-center justify-center p-2 rounded-md text-[#E0E0E0] hover:text-white hover:bg-[#2A2A2A] focus:outline-none focus:ring-2 focus:ring-[#296CFF] border border-[#333333] hover:border-[#296CFF] transition-all duration-300"
               >
                 {isOpen ? (
                   <XMarkIcon className="block h-6 w-6" />
@@ -304,27 +129,66 @@ const Navbar = () => {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="md:hidden bg-surface/95 backdrop-blur-sm border-t border-primary-500/20"
+          className="md:hidden bg-[#121212] border-t border-[#333333] shadow-lg"
         >
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          <div className="px-2 pt-2 pb-3 space-y-2 sm:px-3">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={item.name}
                   to={item.path}
-                  onClick={() => setIsOpen(false)} // Close menu on click
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 flex items-center space-x-2 ${
+                  onClick={() => setIsOpen(false)}
+                  className={`block px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 flex items-center space-x-3 ${
                     isActivePath(item.path)
-                      ? 'bg-accent-500/20 text-accent-400 border border-accent-400/30'
-                      : 'text-muted-300 hover:text-foreground hover:bg-primary-500/10'
+                      ? 'bg-[#296CFF] text-white shadow-lg shadow-[#296CFF]/30 border border-[#2979FF]'
+                      : 'text-[#E0E0E0] hover:text-white hover:bg-[#2A2A2A] border border-transparent hover:border-[#333333]'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-5 h-5" />
                   <span>{item.name}</span>
                 </Link>
               );
             })}
+            
+            {/* Mobile Wallet Connection */}
+            <div className="pt-2 border-t border-[#333333]">
+              {isConnected ? (
+                <div className="space-y-2">
+                  <div className="px-4 py-2 text-sm">
+                    <div className="flex items-center space-x-2 text-[#999999] mb-1">
+                      <LinkIcon className="w-3 h-3 text-[#00C853]" />
+                      <span>Wallet Connected</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-[#296CFF] font-mono text-sm bg-[#001A4D] px-2 py-1 rounded border border-[#296CFF]">
+                      <WalletIcon className="w-3 h-3" />
+                      <span>{account.substring(0, 6)}...{account.substring(account.length - 4)}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      disconnectWallet();
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-3 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-[#E0E0E0] hover:text-white border border-[#333333] hover:border-[#FF4C4C] rounded-lg transition-all duration-300 flex items-center space-x-2"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                    <span>Disconnect Wallet</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    connectWallet();
+                    setIsOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-3 bg-[#296CFF] hover:bg-[#2979FF] text-white font-semibold rounded-lg shadow-lg shadow-[#296CFF]/30 hover:shadow-[#296CFF]/50 transition-all duration-300 flex items-center space-x-2"
+                >
+                  <WalletIcon className="w-4 h-4" />
+                  <span>Connect Wallet</span>
+                </button>
+              )}
+            </div>
           </div>
         </motion.div>
       )}

@@ -1,4 +1,3 @@
-// components/verification/VerificationPortal.jsx
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -10,7 +9,16 @@ import {
   ExclamationCircleIcon,
   InformationCircleIcon,
   BugAntIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  ClipboardIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+  WalletIcon,
+  SparklesIcon,
+  HashtagIcon,
+  DocumentIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 import Button from '../common/Button';
 import QRCodeScanner from './QRCodeScanner';
@@ -35,18 +43,18 @@ const VerificationPortal = () => {
 
   const handleHashVerification = async () => {
     if (!hashInput.trim()) {
-      toast.error('Please enter a document hash');
+      toast.error('📝 Please enter a document hash');
       return;
     }
 
     const hashValidation = validateHashFormat(hashInput);
     if (!hashValidation.isValid) {
-      toast.error(`Invalid hash format. Expected 64 hexadecimal characters, got ${hashValidation.length}`);
+      toast.error(`❌ Invalid hash format. Expected 64 hexadecimal characters, got ${hashValidation.length}`);
       return;
     }
 
     if (!selectedFile) {
-      toast.error('Please select a file to verify');
+      toast.error('📄 Please select a file to verify');
       return;
     }
 
@@ -69,7 +77,9 @@ const VerificationPortal = () => {
       console.log('📁 Selected file:', selectedFile.name, selectedFile.size, selectedFile.type);
       console.log('📝 Normalized expected hash:', normalizedHash);
       
-      toast.info('🔍 Analyzing document and checking verification status...');
+      toast.info('🔍 Analyzing document and checking verification status...', {
+        icon: '🔍'
+      });
       
       // Step 1: Hash-based verification
       const hashResult = await verifyDocumentHash(selectedFile, normalizedHash);
@@ -210,8 +220,9 @@ const VerificationPortal = () => {
                 combinedResult.foundInStorage = true;
                 combinedResult.currentStatus = 'verified';
                 
-                toast.success('✅ Document verified and status updated successfully!', {
-                  autoClose: 5000
+                toast.success('🎉 Document verified and status updated successfully!', {
+                  autoClose: 5000,
+                  icon: '🎉'
                 });
                 
               } else {
@@ -221,7 +232,9 @@ const VerificationPortal = () => {
               
             } else {
               console.log(`ℹ️ Document already has status: ${foundDocument.status}`);
-              toast.info(`✅ Document already ${foundDocument.status}`);
+              toast.info(`✅ Document already ${foundDocument.status}`, {
+                icon: '✅'
+              });
             }
           } else {
             console.log('❌ Document not found in storage');
@@ -229,7 +242,9 @@ const VerificationPortal = () => {
             
             // Still show success for hash verification even if not in storage
             if (combinedResult.isValid) {
-              toast.success('✅ Document hash verified successfully!');
+              toast.success('✅ Document hash verified successfully!', {
+                icon: '✅'
+              });
               toast.info('💡 Document not found in your uploaded documents - may not have been uploaded through this app');
             }
           }
@@ -245,7 +260,9 @@ const VerificationPortal = () => {
         
         // Still show hash verification result
         if (combinedResult.isValid) {
-          toast.success('✅ Document hash verified successfully!');
+          toast.success('✅ Document hash verified successfully!', {
+            icon: '✅'
+          });
           if (!isConnected) {
             toast.info('💡 Connect wallet to check against your uploaded documents');
           }
@@ -327,16 +344,19 @@ const VerificationPortal = () => {
         'image/png',
         'image/jpeg',
         'image/gif',
-        'image/webp'
+        'image/webp',
+        'text/plain'
       ];
       
       if (!allowedTypes.includes(file.type)) {
-        toast.error('📄 File type not supported. Please use PDF, DOC, DOCX, or image files.');
+        toast.error('📄 File type not supported. Please use PDF, DOC, DOCX, images, or text files.');
         return;
       }
       
       setSelectedFile(file);
-      toast.success(`📁 File selected: ${file.name}`);
+      toast.success(`📁 File selected: ${file.name}`, {
+        icon: '📁'
+      });
     }
   };
 
@@ -362,11 +382,13 @@ const VerificationPortal = () => {
   };
 
   const handleQRScan = (result) => {
-    if (result) {
-      setHashInput(result);
+    if (result && result.hash) {
+      setHashInput(result.hash);
       setShowScanner(false);
       setVerificationMethod('hash');
-      toast.success('📱 QR code scanned successfully!');
+      toast.success('📱 QR code scanned successfully!', {
+        icon: '📱'
+      });
     }
   };
 
@@ -375,7 +397,9 @@ const VerificationPortal = () => {
     setSelectedFile(null);
     setVerificationResult(null);
     document.getElementById('file-input').value = '';
-    toast.info('🧹 Verification form cleared');
+    toast.info('🧹 Verification form cleared', {
+      icon: '🧹'
+    });
   };
 
   const pasteFromClipboard = async () => {
@@ -383,7 +407,9 @@ const VerificationPortal = () => {
       const text = await navigator.clipboard.readText();
       if (text && text.length > 10) {
         setHashInput(text.trim());
-        toast.success('📋 Hash pasted from clipboard');
+        toast.success('📋 Hash pasted from clipboard', {
+          icon: '📋'
+        });
       } else {
         toast.error('📋 Clipboard does not contain a valid hash');
       }
@@ -415,15 +441,15 @@ const VerificationPortal = () => {
         {/* Header */}
         <div className="text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="p-3 bg-accent-500/20 rounded-full border border-accent-400/30">
-              <ShieldCheckIcon className="w-8 h-8 text-accent-400" />
+            <div className="p-3 bg-[#296CFF]/20 rounded-full border border-[#296CFF]/30">
+              <ShieldCheckIcon className="w-8 h-8 text-[#296CFF]" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-400 to-secondary-400 bg-clip-text text-transparent mb-3">
-            Document Verification
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#296CFF] to-[#00C853] bg-clip-text text-transparent mb-3">
+            Document Verification Portal
           </h1>
-          <p className="text-lg text-muted-300 max-w-2xl mx-auto">
-            Verify document authenticity and update verification status. Successfully verified documents will be marked as verified in your records.
+          <p className="text-lg text-[#CCCCCC] max-w-2xl mx-auto">
+            Verify document authenticity and update verification status. Successfully verified documents will be marked as verified in your MongoDB records.
           </p>
         </div>
 
@@ -432,16 +458,17 @@ const VerificationPortal = () => {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-primary-500/10 border-l-4 border-primary-400 p-4 rounded-lg"
+            className="bg-[#296CFF]/10 border-l-4 border-[#296CFF] p-4 rounded-lg"
           >
             <div className="flex items-center">
-              <InformationCircleIcon className="w-6 h-6 text-primary-400 mr-3" />
+              <InformationCircleIcon className="w-6 h-6 text-[#296CFF] mr-3" />
               <div>
-                <p className="text-primary-400 font-medium">
+                <p className="text-[#296CFF] font-semibold">
                   Enhanced Verification Available
                 </p>
-                <p className="text-muted-300 text-sm mt-1">
-                  Connect your wallet to check against your uploaded documents and update verification status.
+                <p className="text-[#999999] text-sm mt-1 flex items-center space-x-2">
+                  <WalletIcon className="w-4 h-4" />
+                  <span>Connect your wallet to check against your uploaded documents and enable automatic status updates.</span>
                 </p>
               </div>
             </div>
@@ -450,38 +477,45 @@ const VerificationPortal = () => {
 
         {/* Verification Method Selection */}
         <div className="card">
-          <h2 className="text-2xl font-semibold mb-6 text-foreground">Choose Verification Method</h2>
+          <div className="flex items-center space-x-2 mb-6">
+            <MagnifyingGlassIcon className="w-5 h-5 text-[#296CFF]" />
+            <h2 className="text-2xl font-semibold text-white">Choose Verification Method</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <motion.button
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setVerificationMethod('hash')}
-              className={`p-6 border-2 rounded-xl transition-all duration-200 ${
+              className={`p-6 border-2 rounded-xl transition-all duration-300 ${
                 verificationMethod === 'hash'
-                  ? 'border-accent-400 bg-accent-500/10 shadow-lg shadow-accent-500/20'
-                  : 'border-primary-500/30 hover:border-accent-400/50 hover:bg-accent-500/5'
+                  ? 'border-[#296CFF] bg-[#296CFF]/10 shadow-lg shadow-[#296CFF]/20'
+                  : 'border-[#333333] hover:border-[#296CFF]/50 hover:bg-[#296CFF]/5'
               }`}
             >
-              <MagnifyingGlassIcon className="w-10 h-10 mx-auto mb-4 text-accent-400" />
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Hash Verification</h3>
-              <p className="text-muted-300 text-sm">
+              <div className="flex items-center justify-center w-16 h-16 bg-[#121212] rounded-xl border border-[#333333] mx-auto mb-4">
+                <MagnifyingGlassIcon className="w-10 h-10 text-[#296CFF]" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-white">Hash Verification</h3>
+              <p className="text-[#CCCCCC] text-sm">
                 Enter the document hash and upload the file for comprehensive verification and status updates
               </p>
             </motion.button>
 
             <motion.button
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setVerificationMethod('qr')}
-              className={`p-6 border-2 rounded-xl transition-all duration-200 ${
+              className={`p-6 border-2 rounded-xl transition-all duration-300 ${
                 verificationMethod === 'qr'
-                  ? 'border-accent-400 bg-accent-500/10 shadow-lg shadow-accent-500/20'
-                  : 'border-primary-500/30 hover:border-accent-400/50 hover:bg-accent-500/5'
+                  ? 'border-[#296CFF] bg-[#296CFF]/10 shadow-lg shadow-[#296CFF]/20'
+                  : 'border-[#333333] hover:border-[#296CFF]/50 hover:bg-[#296CFF]/5'
               }`}
             >
-              <QrCodeIcon className="w-10 h-10 mx-auto mb-4 text-accent-400" />
-              <h3 className="text-lg font-semibold mb-2 text-foreground">QR Code Verification</h3>
-              <p className="text-muted-300 text-sm">
+              <div className="flex items-center justify-center w-16 h-16 bg-[#121212] rounded-xl border border-[#333333] mx-auto mb-4">
+                <QrCodeIcon className="w-10 h-10 text-[#296CFF]" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-white">QR Code Verification</h3>
+              <p className="text-[#CCCCCC] text-sm">
                 Scan QR code to automatically extract hash and verify document with status updates
               </p>
             </motion.button>
@@ -490,16 +524,20 @@ const VerificationPortal = () => {
 
         {/* Verification Form */}
         <div className="card">
-          <h2 className="text-2xl font-semibold mb-6 text-foreground">Verification Details</h2>
+          <div className="flex items-center space-x-2 mb-6">
+            <DocumentTextIcon className="w-5 h-5 text-[#00C853]" />
+            <h2 className="text-2xl font-semibold text-white">Verification Details</h2>
+          </div>
           
           <div className="space-y-6">
             {/* Hash Input Section */}
             <div>
-              <label className="block text-lg font-semibold text-foreground mb-3">
-                📝 Document Hash
+              <label className="flex items-center space-x-2 text-lg font-semibold text-white mb-3">
+                <HashtagIcon className="w-5 h-5 text-[#8B5CF6]" />
+                <span>Document Hash</span>
               </label>
               <div className="space-y-3">
-                <div className="flex space-x-2">
+                <div className="flex space-x-3">
                   <input
                     type="text"
                     value={hashInput}
@@ -511,9 +549,13 @@ const VerificationPortal = () => {
                     onClick={pasteFromClipboard}
                     variant="outline"
                     size="sm"
-                    className="px-4"
+                    className="px-4 flex items-center space-x-2"
                   >
-                    📋 Paste
+                    <p className='flex items-center space-x-1'>
+                      <ClipboardIcon className="w-4 h-4" />
+                      <span>Paste</span>
+                    </p>
+                   
                   </Button>
                   <Button
                     onClick={() => setShowScanner(true)}
@@ -521,36 +563,49 @@ const VerificationPortal = () => {
                     size="sm"
                     className="flex items-center space-x-2"
                   >
+                    <p className='flex items-center space-x-1'>
                     <QrCodeIcon className="w-4 h-4" />
-                    <span>📱 Scan QR</span>
+                    <span>Scan QR</span>
+                    </p>
+                    
                   </Button>
                 </div>
                 
                 {/* Hash Validation Display */}
                 {hashValidation && (
-                  <div className="text-sm text-muted-300 bg-surface/40 p-3 rounded-lg">
+                  <div className="text-sm bg-[#121212] p-4 rounded-xl border border-[#333333]">
                     <div className="flex justify-between items-center mb-2">
-                      <span>Hash Length: {hashValidation.displayLength} characters</span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      <span className="text-[#E0E0E0]">Hash Length: {hashValidation.displayLength} characters</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         hashValidation.status === 'valid'
-                          ? 'bg-secondary-400/20 text-secondary-400'
-                          : 'bg-red-500/20 text-red-400'
+                          ? 'bg-[#00C853]/20 text-[#00C853] border border-[#00C853]/30'
+                          : 'bg-[#FF4C4C]/20 text-[#FF4C4C] border border-[#FF4C4C]/30'
                       }`}>
-                        {hashValidation.status === 'valid' ? '✓ Valid SHA-256' : `⚠ Invalid (expected 64)`}
+                        {hashValidation.status === 'valid' ? (
+                          <div className="flex items-center space-x-1">
+                            <CheckCircleIcon className="w-3 h-3" />
+                            <span>Valid SHA-256</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-1">
+                            <XCircleIcon className="w-3 h-3" />
+                            <span>Invalid (expected 64)</span>
+                          </div>
+                        )}
                       </span>
                     </div>
                     
                     {hashValidation.hadPrefix && (
-                      <div className="flex items-center space-x-2 text-xs">
-                        <InformationCircleIcon className="w-4 h-4 text-accent-400" />
-                        <span className="text-accent-400">
+                      <div className="flex items-center space-x-2 text-xs p-2 bg-[#296CFF]/10 rounded border border-[#296CFF]/30">
+                        <InformationCircleIcon className="w-4 h-4 text-[#296CFF]" />
+                        <span className="text-[#296CFF]">
                           Hash contains '0x' prefix - will be normalized for comparison
                         </span>
                       </div>
                     )}
                     
                     {hashValidation.status === 'invalid' && (
-                      <p className="text-xs text-red-400 mt-1">
+                      <p className="text-xs text-[#FF4C4C] mt-2 p-2 bg-[#FF4C4C]/10 rounded border border-[#FF4C4C]/30">
                         Please enter a valid 64-character SHA-256 hash (with or without 0x prefix)
                       </p>
                     )}
@@ -561,17 +616,18 @@ const VerificationPortal = () => {
 
             {/* File Upload Section */}
             <div>
-              <label className="block text-lg font-semibold text-foreground mb-3">
-                📄 Document to Verify
+              <label className="flex items-center space-x-2 text-lg font-semibold text-white mb-3">
+                <DocumentIcon className="w-5 h-5 text-[#00C853]" />
+                <span>Document to Verify</span>
               </label>
               
               <div
-                className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+                className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
                   dragActive 
-                    ? 'border-accent-400 bg-accent-500/10' 
+                    ? 'border-[#296CFF] bg-[#296CFF]/10 scale-105' 
                     : selectedFile
-                      ? 'border-secondary-400 bg-secondary-400/10'
-                      : 'border-primary-500/30 hover:border-accent-400/50'
+                      ? 'border-[#00C853] bg-[#00C853]/10'
+                      : 'border-[#333333] hover:border-[#296CFF]/50 hover:bg-[#296CFF]/5'
                 }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
@@ -582,7 +638,7 @@ const VerificationPortal = () => {
                   id="file-input"
                   type="file"
                   onChange={handleFileSelect}
-                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp"
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp,.txt"
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 
@@ -591,33 +647,38 @@ const VerificationPortal = () => {
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="space-y-3"
+                      className="space-y-4"
                     >
-                      <DocumentTextIcon className="w-16 h-16 mx-auto text-secondary-400" />
+                      <div className="w-16 h-16 bg-[#00C853]/20 rounded-xl flex items-center justify-center mx-auto border border-[#00C853]/30">
+                        <DocumentTextIcon className="w-10 h-10 text-[#00C853]" />
+                      </div>
                       <div>
-                        <p className="text-lg font-semibold text-secondary-400">{selectedFile.name}</p>
-                        <p className="text-muted-300">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
-                        </p>
+                        <p className="text-lg font-semibold text-[#00C853]">{selectedFile.name}</p>
+                        <div className="flex items-center justify-center space-x-2 text-[#999999] mt-2">
+                          <ChartBarIcon className="w-4 h-4" />
+                          <span>{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                          <span>•</span>
+                          <span>{selectedFile.type || 'Unknown'}</span>
+                        </div>
                       </div>
                     </motion.div>
                   ) : dragActive ? (
-                    <div className="space-y-3">
-                      <CloudArrowUpIcon className="w-16 h-16 mx-auto text-accent-400" />
-                      <p className="text-lg font-semibold text-accent-400">🎯 Drop your file here!</p>
+                    <div className="space-y-4">
+                      <CloudArrowUpIcon className="w-16 h-16 mx-auto text-[#296CFF]" />
+                      <p className="text-lg font-semibold text-[#296CFF]">Drop your file here!</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      <CloudArrowUpIcon className="w-16 h-16 mx-auto text-muted-400" />
+                    <div className="space-y-4">
+                      <CloudArrowUpIcon className="w-16 h-16 mx-auto text-[#666666]" />
                       <div>
-                        <p className="text-lg font-semibold text-foreground">
-                          📁 Drag & drop your document here
+                        <p className="text-lg font-semibold text-white mb-2">
+                          Drag & drop your document here
                         </p>
-                        <p className="text-muted-300">
+                        <p className="text-[#CCCCCC] mb-2">
                           or click to browse files
                         </p>
-                        <p className="text-sm text-muted-400 mt-2">
-                          Supports PDF, DOC, DOCX, and Images (Max 10MB)
+                        <p className="text-sm text-[#999999]">
+                          Supports PDF, DOC, DOCX, Images, and Text files (Max 10MB)
                         </p>
                       </div>
                     </div>
@@ -627,38 +688,75 @@ const VerificationPortal = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-4 pt-6 border-t border-primary-500/20">
+            <div className="flex flex-wrap gap-4 pt-6 border-t border-[#333333]">
               <Button
                 onClick={handleHashVerification}
                 loading={isVerifying}
                 disabled={!hashInput.trim() || !selectedFile || (hashValidation && hashValidation.status === 'invalid')}
-                className="btn-primary flex-1 min-w-[200px] h-12 text-lg font-semibold"
+                variant="primary"
+                className="flex-1 min-w-[200px] h-12 text-lg font-semibold flex items-center justify-center space-x-2"
               >
-                {isVerifying ? '🔍 Verifying...' : '🔍 Verify & Update Status'}
+                {isVerifying ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <MagnifyingGlassIcon className="w-5 h-5" />
+                    </motion.div>
+                    <span>Verifying...</span>
+                  </>
+                ) : (
+                  <p className='flex items-center space-x-2'>
+                    <ShieldCheckIcon className="w-5 h-5" />
+                    <span>Verify & Update Status</span>
+                  </p>
+                )}
               </Button>
               
               <Button
                 onClick={clearVerification}
-                variant="outline"
+                variant="ghost"
                 disabled={isVerifying}
-                className="h-12 px-6"
+                className="h-12 px-6 flex items-center space-x-2"
               >
-                🧹 Clear
+                <p className='flex items-center space-x-2'>
+                  <XCircleIcon className="w-4 h-4" />
+                  <span>Clear</span>
+                </p>
               </Button>
             </div>
 
             {/* Enhanced Tips */}
-            <div className="bg-accent-500/10 border border-accent-400/20 rounded-lg p-4">
+            <div className="bg-[#296CFF]/10 border border-[#296CFF]/30 rounded-xl p-6">
               <div className="flex items-start space-x-3">
-                <InformationCircleIcon className="w-5 h-5 text-accent-400 flex-shrink-0 mt-0.5" />
+                <InformationCircleIcon className="w-6 h-6 text-[#296CFF] flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-accent-400 mb-2">💡 Verification & Status Updates</h4>
-                  <ul className="text-sm text-muted-300 space-y-1">
-                    <li>• Successfully verified documents will automatically update from "pending" to "verified"</li>
-                    <li>• Hash comparison is case-insensitive with automatic normalization</li>
-                    <li>• Multiple verification strategies ensure maximum accuracy</li>
-                    <li>• Document status updates are reflected immediately in your Dashboard</li>
-                    <li>• Connect wallet to enable automatic status management</li>
+                  <h4 className="font-semibold text-[#296CFF] mb-3 flex items-center space-x-2">
+                    <SparklesIcon className="w-4 h-4" />
+                    <span>Verification & Status Updates</span>
+                  </h4>
+                  <ul className="text-sm text-[#E0E0E0] space-y-2">
+                    <li className="flex items-start space-x-2">
+                      <CheckCircleIcon className="w-4 h-4 text-[#00C853] mt-0.5 flex-shrink-0" />
+                      <span>Successfully verified documents will automatically update from "pending" to "verified"</span>
+                    </li>
+                    <li className="flex items-start space-x-2">
+                      <HashtagIcon className="w-4 h-4 text-[#8B5CF6] mt-0.5 flex-shrink-0" />
+                      <span>Hash comparison is case-insensitive with automatic normalization</span>
+                    </li>
+                    <li className="flex items-start space-x-2">
+                      <MagnifyingGlassIcon className="w-4 h-4 text-[#296CFF] mt-0.5 flex-shrink-0" />
+                      <span>Multiple verification strategies ensure maximum accuracy</span>
+                    </li>
+                    <li className="flex items-start space-x-2">
+                      <ChartBarIcon className="w-4 h-4 text-[#FF9800] mt-0.5 flex-shrink-0" />
+                      <span>Document status updates are reflected immediately in your Dashboard</span>
+                    </li>
+                    <li className="flex items-start space-x-2">
+                      <WalletIcon className="w-4 h-4 text-[#296CFF] mt-0.5 flex-shrink-0" />
+                      <span>Connect wallet to enable automatic status management</span>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -682,50 +780,66 @@ const VerificationPortal = () => {
         {/* Verification History */}
         {verificationHistory.length > 0 && (
           <div className="card">
-            <h3 className="text-lg font-semibold mb-4 flex items-center text-foreground">
-              📊 Recent Verification Attempts
-            </h3>
+            <div className="flex items-center space-x-2 mb-6">
+              <ClockIcon className="w-5 h-5 text-[#FF9800]" />
+              <h3 className="text-lg font-semibold text-white">Recent Verification Attempts</h3>
+              <div className="px-2 py-1 bg-[#333333] text-[#E0E0E0] text-xs font-medium rounded border border-[#444444]">
+                {verificationHistory.length} attempts
+              </div>
+            </div>
             <div className="space-y-3">
               {verificationHistory.map((attempt) => (
                 <motion.div
-                  key={`${attempt.id}-${attempt.timestamp}-${Math.random().toString(36).substr(2, 9)}`} // Unique key
+                  key={`${attempt.id}-${attempt.timestamp}-${Math.random().toString(36).substr(2, 9)}`}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className={`p-4 rounded-lg border-l-4 ${
+                  className={`p-4 rounded-xl border-l-4 ${
                     attempt.status === 'success' 
-                      ? 'border-l-secondary-400 bg-secondary-400/10'
+                      ? 'border-l-[#00C853] bg-[#00C853]/10'
                       : attempt.status === 'failed'
-                        ? 'border-l-red-500 bg-red-500/10'
+                        ? 'border-l-[#FF4C4C] bg-[#FF4C4C]/10'
                         : attempt.status === 'error'
-                          ? 'border-l-orange-500 bg-orange-500/10'
-                          : 'border-l-accent-400 bg-accent-500/10'
+                          ? 'border-l-[#FF9800] bg-[#FF9800]/10'
+                          : 'border-l-[#296CFF] bg-[#296CFF]/10'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="font-medium text-foreground">{attempt.fileName}</p>
-                      <p className="text-sm text-muted-300 mt-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <DocumentIcon className="w-4 h-4 text-[#E0E0E0]" />
+                        <p className="font-medium text-white">{attempt.fileName}</p>
+                      </div>
+                      <p className="text-sm text-[#999999] mb-1">
                         {new Date(attempt.timestamp).toLocaleString()}
                       </p>
                       {attempt.result?.statusUpdated && (
-                        <p className="text-xs text-secondary-400 mt-1">
-                          ✨ Status updated to verified in records
-                        </p>
+                        <div className="flex items-center space-x-1 text-xs">
+                          <SparklesIcon className="w-3 h-3 text-[#00C853]" />
+                          <span className="text-[#00C853]">Status updated to verified in records</span>
+                        </div>
                       )}
                     </div>
                     <div className="text-right">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
                         attempt.status === 'success' 
-                          ? 'bg-secondary-400/20 text-secondary-400'
+                          ? 'bg-[#00C853]/20 text-[#00C853] border-[#00C853]/30'
                           : attempt.status === 'failed'
-                            ? 'bg-red-500/20 text-red-400'
+                            ? 'bg-[#FF4C4C]/20 text-[#FF4C4C] border-[#FF4C4C]/30'
                             : attempt.status === 'error'
-                              ? 'bg-orange-500/20 text-orange-400'
-                              : 'bg-accent-500/20 text-accent-400'
+                              ? 'bg-[#FF9800]/20 text-[#FF9800] border-[#FF9800]/30'
+                              : 'bg-[#296CFF]/20 text-[#296CFF] border-[#296CFF]/30'
                       }`}>
-                        {attempt.status === 'success' ? '✅ Verified' : 
-                         attempt.status === 'failed' ? '❌ Failed' :
-                         attempt.status === 'error' ? '⚠️ Error' : '⏳ Processing'}
+                        <div className="flex items-center space-x-1">
+                          {attempt.status === 'success' && <CheckCircleIcon className="w-3 h-3" />}
+                          {attempt.status === 'failed' && <XCircleIcon className="w-3 h-3" />}
+                          {attempt.status === 'error' && <ExclamationCircleIcon className="w-3 h-3" />}
+                          {attempt.status === 'processing' && <ClockIcon className="w-3 h-3" />}
+                          <span>
+                            {attempt.status === 'success' ? 'Verified' : 
+                             attempt.status === 'failed' ? 'Failed' :
+                             attempt.status === 'error' ? 'Error' : 'Processing'}
+                          </span>
+                        </div>
                       </span>
                     </div>
                   </div>
@@ -738,31 +852,43 @@ const VerificationPortal = () => {
         {/* Debug Information for Failed Verifications */}
         {verificationResult && !verificationResult.isValid && (
           <div className="card">
-            <div className="flex items-center space-x-2 mb-4">
-              <BugAntIcon className="w-5 h-5 text-orange-500" />
-              <h3 className="text-lg font-semibold text-orange-800">🐛 Debug Information</h3>
+            <div className="flex items-center space-x-2 mb-6">
+              <BugAntIcon className="w-5 h-5 text-[#FF9800]" />
+              <h3 className="text-lg font-semibold text-white">Debug Information</h3>
+              <div className="px-2 py-1 bg-[#FF9800]/10 text-[#FF9800] text-xs font-medium rounded border border-[#FF9800]/30">
+                Debugging
+              </div>
             </div>
             
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <div className="space-y-3">
+            <div className="bg-[#FF9800]/10 border border-[#FF9800]/30 rounded-xl p-6">
+              <div className="space-y-4">
                 <div>
-                  <span className="text-sm font-medium text-orange-700">Expected Hash:</span>
-                  <code className="block bg-white p-2 rounded font-mono text-xs mt-1 break-all">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <HashtagIcon className="w-4 h-4 text-[#FF9800]" />
+                    <span className="text-sm font-semibold text-[#FF9800]">Expected Hash:</span>
+                  </div>
+                  <code className="block bg-[#0D0D0D] p-3 rounded-lg font-mono text-xs text-[#E0E0E0] break-all border border-[#333333]">
                     {verificationResult.expectedHash}
                   </code>
                 </div>
                 
                 <div>
-                  <span className="text-sm font-medium text-orange-700">Generated Hash:</span>
-                  <code className="block bg-white p-2 rounded font-mono text-xs mt-1 break-all">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <HashtagIcon className="w-4 h-4 text-[#FF9800]" />
+                    <span className="text-sm font-semibold text-[#FF9800]">Generated Hash:</span>
+                  </div>
+                  <code className="block bg-[#0D0D0D] p-3 rounded-lg font-mono text-xs text-[#E0E0E0] break-all border border-[#333333]">
                     {verificationResult.generatedHash}
                   </code>
                 </div>
                 
                 {verificationResult.debugInfo && (
                   <div>
-                    <span className="text-sm font-medium text-orange-700">Debug Details:</span>
-                    <pre className="bg-white p-2 rounded text-xs mt-1 overflow-auto">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <BugAntIcon className="w-4 h-4 text-[#FF9800]" />
+                      <span className="text-sm font-semibold text-[#FF9800]">Debug Details:</span>
+                    </div>
+                    <pre className="bg-[#0D0D0D] p-3 rounded-lg text-xs text-[#E0E0E0] overflow-auto border border-[#333333]">
                       {JSON.stringify(verificationResult.debugInfo, null, 2)}
                     </pre>
                   </div>
