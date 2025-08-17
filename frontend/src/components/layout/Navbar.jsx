@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Bars3Icon, 
+import {
+  Bars3Icon,
   XMarkIcon,
   DocumentIcon,
   CloudArrowUpIcon,
@@ -11,7 +11,10 @@ import {
   CubeTransparentIcon,
   WalletIcon,
   LinkIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  BuildingOfficeIcon,
+  DocumentPlusIcon,
+  QrCodeIcon
 } from '@heroicons/react/24/outline';
 import { useWeb3 } from '../../context/Web3Context';
 
@@ -22,10 +25,13 @@ const Navbar = () => {
 
   // Navigation items with proper paths and icons
   const navigationItems = [
-    { name: 'Dashboard', path: '/', icon: ChartBarIcon },
+    { name: 'Home', path: '/', icon: ChartBarIcon },
+    { name: 'Dashboard', path: '/dashboard', icon: ChartBarIcon },
     { name: 'Upload Documents', path: '/upload', icon: CloudArrowUpIcon },
     { name: 'Verify Documents', path: '/verify', icon: ShieldCheckIcon },
-    // { name: 'Analytics', path: '/analytics', icon: DocumentIcon },
+    { name: 'Issue Documents', path: '/issue-document', icon: DocumentPlusIcon },
+    { name: 'Third-Party Verify', path: '/third-party-verify', icon: BuildingOfficeIcon },
+    { name: 'QR Scanner', path: '/qr-scanner', icon: QrCodeIcon },
   ];
 
   // Function to check if current path matches nav item
@@ -35,7 +41,7 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1A1A1A] border-b border-[#333333] shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
@@ -60,11 +66,10 @@ const Navbar = () => {
                   <Link
                     key={item.name}
                     to={item.path}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2 ${
-                      isActivePath(item.path)
-                        ? 'bg-[#296CFF] text-white shadow-lg shadow-[#296CFF]/30 border border-[#2979FF]'
-                        : 'text-[#E0E0E0] hover:text-white hover:bg-[#2A2A2A] border border-transparent hover:border-[#333333]'
-                    }`}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2 ${isActivePath(item.path)
+                      ? 'bg-[#296CFF] text-white shadow-lg shadow-[#296CFF]/30 border border-[#2979FF]'
+                      : 'text-[#E0E0E0] hover:text-white hover:bg-[#2A2A2A] border border-transparent hover:border-[#333333]'
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     <span>{item.name}</span>
@@ -139,18 +144,17 @@ const Navbar = () => {
                   key={item.name}
                   to={item.path}
                   onClick={() => setIsOpen(false)}
-                  className={`block px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 flex items-center space-x-3 ${
-                    isActivePath(item.path)
-                      ? 'bg-[#296CFF] text-white shadow-lg shadow-[#296CFF]/30 border border-[#2979FF]'
-                      : 'text-[#E0E0E0] hover:text-white hover:bg-[#2A2A2A] border border-transparent hover:border-[#333333]'
-                  }`}
+                  className={`block px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 flex items-center space-x-3 ${isActivePath(item.path)
+                    ? 'bg-[#296CFF] text-white shadow-lg shadow-[#296CFF]/30 border border-[#2979FF]'
+                    : 'text-[#E0E0E0] hover:text-white hover:bg-[#2A2A2A] border border-transparent hover:border-[#333333]'
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.name}</span>
                 </Link>
               );
             })}
-            
+
             {/* Mobile Wallet Connection */}
             <div className="pt-2 border-t border-[#333333]">
               {isConnected ? (

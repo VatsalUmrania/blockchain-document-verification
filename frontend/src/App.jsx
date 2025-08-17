@@ -121,6 +121,10 @@ import Navbar from './components/layout/Navbar';
 import Dashboard from './components/dashboard/Dashboard';
 import UploadPage from './components/document/DocumentUpload';
 import VerificationPortal from './components/verification/VerificationPortal';
+import ThirdPartyVerification from './components/verification/ThirdPartyVerification';
+import DocumentIssuanceWorkflow from './components/issuance/DocumentIssuanceWorkflow';
+import QRCodeScanner from './components/qr/QRCodeScanner';
+import UserTypeSelection from './components/common/UserTypeSelection';
 
 function App() {
   return (
@@ -130,13 +134,17 @@ function App() {
           <div className="min-h-screen bg-gradient-to-br from-[#0D0D0D] via-[#1A1A1A] to-[#121212]">
             {/* Navigation */}
             <Navbar />
-            
+
             {/* Main Content Area */}
             <main className="pt-20 min-h-screen">
               <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/" element={<UserTypeSelection />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/verify" element={<VerificationPortal />} />
+                <Route path="/third-party-verify" element={<ThirdPartyVerification />} />
+                <Route path="/issue-document" element={<DocumentIssuanceWorkflow />} />
+                <Route path="/qr-scanner" element={<QRCodeScanner />} />
               </Routes>
             </main>
 
