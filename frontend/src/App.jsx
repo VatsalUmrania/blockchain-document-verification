@@ -116,7 +116,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { Web3Provider } from './context/Web3Context';
-import { DocumentStatsProvider } from './context/documentStatsContext';
+import { DocumentStatsProvider } from './context/DocumentStatsContext';
 import Navbar from './components/layout/Navbar';
 import Dashboard from './components/dashboard/Dashboard';
 import UploadPage from './components/document/DocumentUpload';
