@@ -1,5 +1,265 @@
+// import React, { useState, useEffect } from 'react';
+// import { motion } from 'framer-motion';
+// import { toast } from 'react-toastify';
+// import QRCode from 'qrcode';
+// import { 
+//   QrCodeIcon,
+//   ArrowDownTrayIcon,
+//   ClipboardIcon,
+//   SparklesIcon,
+//   HashtagIcon,
+//   InformationCircleIcon
+// } from '@heroicons/react/24/outline';
+// import Button from '../common/Button';
+
+// const QRCodeGenerator = ({ hash, metadata }) => {
+//   const [qrCodeUrl, setQrCodeUrl] = useState('');
+//   const [isGenerating, setIsGenerating] = useState(false);
+
+//   useEffect(() => {
+//     if (hash) {
+//       generateQRCode();
+//     }
+//   }, [hash]);
+
+//   const generateQRCode = async () => {
+//     if (!hash) {
+//       toast.error('❌ No hash provided for QR code generation');
+//       return;
+//     }
+
+//     setIsGenerating(true);
+//     try {
+//       const qrData = JSON.stringify({
+//         hash,
+//         metadata,
+//         timestamp: Date.now(),
+//         type: 'document-verification',
+//         version: '1.0'
+//       });
+
+//       const qrUrl = await QRCode.toDataURL(qrData, {
+//         width: 256,
+//         margin: 2,
+//         color: {
+//           dark: '#296CFF',  // Electric blue for QR code
+//           light: '#1A1A1A'  // Dark background
+//         },
+//         errorCorrectionLevel: 'M',
+//         type: 'image/png'
+//       });
+
+//       setQrCodeUrl(qrUrl);
+//       toast.success('📱 QR code generated successfully!', {
+//         icon: '🔲'
+//       });
+//     } catch (error) {
+//       console.error('QR generation error:', error);
+//       toast.error('❌ Failed to generate QR code');
+//     } finally {
+//       setIsGenerating(false);
+//     }
+//   };
+
+//   const downloadQRCode = () => {
+//     if (!qrCodeUrl) {
+//       toast.error('❌ No QR code to download');
+//       return;
+//     }
+
+//     const link = document.createElement('a');
+//     link.href = qrCodeUrl;
+//     link.download = `document-qr-${hash.substring(0, 8)}.png`;
+//     link.click();
+//     toast.success('💾 QR code downloaded!', {
+//       icon: '💾'
+//     });
+//   };
+
+//   const copyHashToClipboard = () => {
+//     navigator.clipboard.writeText(hash).then(() => {
+//       toast.success('📋 Hash copied to clipboard!', {
+//         icon: '📋'
+//       });
+//     }).catch(() => {
+//       toast.error('❌ Failed to copy hash');
+//     });
+//   };
+
+//   const shareQRCode = async () => {
+//     if (!qrCodeUrl) {
+//       toast.error('❌ No QR code to share');
+//       return;
+//     }
+
+//     if (navigator.share) {
+//       try {
+//         // Convert data URL to blob for sharing
+//         const response = await fetch(qrCodeUrl);
+//         const blob = await response.blob();
+//         const file = new File([blob], `document-qr-${hash.substring(0, 8)}.png`, { type: 'image/png' });
+
+//         await navigator.share({
+//           title: 'Document Verification QR Code',
+//           text: 'Scan this QR code to verify the document',
+//           files: [file]
+//         });
+//       } catch (error) {
+//         // Fallback to copying hash
+//         copyHashToClipboard();
+//       }
+//     } else {
+//       // Fallback for browsers that don't support Web Share API
+//       copyHashToClipboard();
+//     }
+//   };
+
+//   if (!hash) {
+//     return (
+//       <div className="text-center p-6 text-[#666666]">
+//         <QrCodeIcon className="w-12 h-12 mx-auto mb-2" />
+//         <p className="text-sm">No hash available for QR code generation</p>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <motion.div
+//       initial={{ opacity: 0, y: 20 }}
+//       animate={{ opacity: 1, y: 0 }}
+//       className="bg-[#121212] border border-[#333333] rounded-xl p-6 shadow-lg"
+//     >
+//       <div className="flex items-center space-x-2 mb-6">
+//         <QrCodeIcon className="w-5 h-5 text-[#296CFF]" />
+//         <h3 className="text-lg font-semibold text-white">Document QR Code</h3>
+//         <div className="px-2 py-1 bg-[#296CFF]/10 text-[#296CFF] text-xs font-medium rounded border border-[#296CFF]/30">
+//           Verification
+//         </div>
+//       </div>
+      
+//       <div className="text-center">
+//         {isGenerating ? (
+//           <div className="w-64 h-64 mx-auto bg-[#0D0D0D] rounded-xl flex items-center justify-center border-2 border-[#296CFF]/30">
+//             <div className="text-center">
+//               <motion.div
+//                 animate={{ rotate: 360 }}
+//                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+//                 className="w-8 h-8 border-4 border-[#296CFF] border-t-transparent rounded-full mx-auto mb-3"
+//               />
+//               <p className="text-sm text-[#296CFF] font-medium">Generating QR Code...</p>
+//             </div>
+//           </div>
+//         ) : qrCodeUrl ? (
+//           <div className="space-y-4">
+//             <motion.div
+//               initial={{ scale: 0.8, opacity: 0 }}
+//               animate={{ scale: 1, opacity: 1 }}
+//               transition={{ duration: 0.3 }}
+//               className="relative inline-block"
+//             >
+//               <img 
+//                 src={qrCodeUrl} 
+//                 alt="Document QR Code"
+//                 className="w-64 h-64 mx-auto border-2 border-[#296CFF] rounded-xl shadow-lg shadow-[#296CFF]/20"
+//               />
+//               <div className="absolute top-2 right-2 p-1 bg-[#296CFF] rounded-full">
+//                 <SparklesIcon className="w-3 h-3 text-white" />
+//               </div>
+//             </motion.div>
+            
+//             {/* QR Info */}
+//             <div className="bg-[#296CFF]/10 border border-[#296CFF]/30 rounded-lg p-4">
+//               <div className="flex items-start space-x-2">
+//                 <InformationCircleIcon className="w-4 h-4 text-[#296CFF] mt-0.5 flex-shrink-0" />
+//                 <div className="text-left">
+//                   <p className="text-sm text-[#296CFF] font-medium mb-1">
+//                     Verification Instructions
+//                   </p>
+//                   <p className="text-xs text-[#E0E0E0]">
+//                     Scan this QR code with any QR reader to quickly access document verification data. 
+//                     Contains encrypted hash and metadata for secure verification.
+//                   </p>
+//                 </div>
+//               </div>
+//             </div>
+
+//             {/* Action Buttons */}
+//             <div className="flex justify-center space-x-3">
+//               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+//                 <Button 
+//                   onClick={downloadQRCode} 
+//                   size="sm" 
+//                   variant="primary"
+//                   className="flex items-center space-x-2"
+//                 >
+//                   <ArrowDownTrayIcon className="w-4 h-4" />
+//                   <span>Download</span>
+//                 </Button>
+//               </motion.div>
+              
+//               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+//                 <Button 
+//                   onClick={copyHashToClipboard} 
+//                   variant="outline" 
+//                   size="sm"
+//                   className="flex items-center space-x-2"
+//                 >
+//                   <ClipboardIcon className="w-4 h-4" />
+//                   <span>Copy Hash</span>
+//                 </Button>
+//               </motion.div>
+//             </div>
+
+//             {/* Hash Preview */}
+//             <div className="bg-[#0D0D0D] rounded-lg p-3 border border-[#333333]">
+//               <div className="flex items-center space-x-2 mb-2">
+//                 <HashtagIcon className="w-3 h-3 text-[#8B5CF6]" />
+//                 <span className="text-xs font-medium text-[#8B5CF6]">Document Hash</span>
+//               </div>
+//               <code className="text-xs font-mono text-[#E0E0E0] break-all">
+//                 {hash.substring(0, 32)}...{hash.substring(hash.length - 8)}
+//               </code>
+//             </div>
+//           </div>
+//         ) : (
+//           <div className="w-64 h-64 mx-auto bg-[#0D0D0D] rounded-xl flex items-center justify-center border-2 border-dashed border-[#333333] hover:border-[#296CFF] transition-colors duration-300">
+//             <div className="text-center">
+//               <QrCodeIcon className="w-12 h-12 text-[#666666] mx-auto mb-3" />
+//               <Button 
+//                 onClick={generateQRCode} 
+//                 variant="primary"
+//                 size="sm"
+//                 className="flex items-center space-x-2"
+//               >
+//                 <SparklesIcon className="w-4 h-4" />
+//                 <span>Generate QR Code</span>
+//               </Button>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+
+//       {/* Metadata Info */}
+//       {metadata && (
+//         <div className="mt-6 pt-4 border-t border-[#333333]">
+//           <h4 className="text-sm font-medium text-[#E0E0E0] mb-2">QR Code Contains:</h4>
+//           <div className="text-xs text-[#999999] space-y-1">
+//             <div>• Document hash for verification</div>
+//             <div>• Upload metadata and timestamp</div>
+//             <div>• Verification type identifier</div>
+//             <div>• Error correction for reliable scanning</div>
+//           </div>
+//         </div>
+//       )}
+//     </motion.div>
+//   );
+// };
+
+// export default QRCodeGenerator;
+
+
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import QRCode from 'qrcode';
 import { 
@@ -8,9 +268,13 @@ import {
   ClipboardIcon,
   SparklesIcon,
   HashtagIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  ShareIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import Button from '../common/Button';
+import LoadingSpinner from '../common/LoadingSpinner';
+import HashDisplay from '../common/HashDisplay';
 
 const QRCodeGenerator = ({ hash, metadata }) => {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -39,11 +303,11 @@ const QRCodeGenerator = ({ hash, metadata }) => {
       });
 
       const qrUrl = await QRCode.toDataURL(qrData, {
-        width: 256,
+        width: 280,
         margin: 2,
         color: {
-          dark: '#296CFF',  // Electric blue for QR code
-          light: '#1A1A1A'  // Dark background
+          dark: '#1A1A1A',  // Theme-aware dark color
+          light: '#FFFFFF'  // White background for better contrast
         },
         errorCorrectionLevel: 'M',
         type: 'image/png'
@@ -104,6 +368,8 @@ const QRCodeGenerator = ({ hash, metadata }) => {
           text: 'Scan this QR code to verify the document',
           files: [file]
         });
+
+        toast.success('📤 QR code shared successfully!');
       } catch (error) {
         // Fallback to copying hash
         copyHashToClipboard();
@@ -116,7 +382,7 @@ const QRCodeGenerator = ({ hash, metadata }) => {
 
   if (!hash) {
     return (
-      <div className="text-center p-6 text-[#666666]">
+      <div className="text-center p-6 text-[rgb(var(--text-quaternary))]">
         <QrCodeIcon className="w-12 h-12 mx-auto mb-2" />
         <p className="text-sm">No hash available for QR code generation</p>
       </div>
@@ -127,129 +393,182 @@ const QRCodeGenerator = ({ hash, metadata }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-[#121212] border border-[#333333] rounded-xl p-6 shadow-lg"
+      className="card"
     >
-      <div className="flex items-center space-x-2 mb-6">
-        <QrCodeIcon className="w-5 h-5 text-[#296CFF]" />
-        <h3 className="text-lg font-semibold text-white">Document QR Code</h3>
-        <div className="px-2 py-1 bg-[#296CFF]/10 text-[#296CFF] text-xs font-medium rounded border border-[#296CFF]/30">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-2">
+          <div className="p-2 bg-[rgb(var(--color-primary)/0.1)] rounded-lg">
+            <QrCodeIcon className="w-5 h-5 text-[rgb(var(--color-primary))]" />
+          </div>
+          <h3 className="text-lg font-semibold text-[rgb(var(--text-primary))]">Document QR Code</h3>
+        </div>
+        <div className="px-3 py-1 bg-[rgb(var(--color-primary)/0.1)] text-[rgb(var(--color-primary))] text-xs font-medium rounded-full border border-[rgb(var(--color-primary)/0.3)]">
           Verification
         </div>
       </div>
       
       <div className="text-center">
-        {isGenerating ? (
-          <div className="w-64 h-64 mx-auto bg-[#0D0D0D] rounded-xl flex items-center justify-center border-2 border-[#296CFF]/30">
-            <div className="text-center">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-8 h-8 border-4 border-[#296CFF] border-t-transparent rounded-full mx-auto mb-3"
-              />
-              <p className="text-sm text-[#296CFF] font-medium">Generating QR Code...</p>
-            </div>
-          </div>
-        ) : qrCodeUrl ? (
-          <div className="space-y-4">
+        <AnimatePresence mode="wait">
+          {isGenerating ? (
             <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-72 h-72 mx-auto bg-[rgb(var(--surface-secondary))] rounded-xl flex items-center justify-center border-2 border-[rgb(var(--color-primary)/0.3)]"
+            >
+              <LoadingSpinner size="lg" color="primary" text="Generating QR Code..." />
+            </motion.div>
+          ) : qrCodeUrl ? (
+            <motion.div
+              key="qr-code"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="relative inline-block"
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="space-y-6"
             >
-              <img 
-                src={qrCodeUrl} 
-                alt="Document QR Code"
-                className="w-64 h-64 mx-auto border-2 border-[#296CFF] rounded-xl shadow-lg shadow-[#296CFF]/20"
-              />
-              <div className="absolute top-2 right-2 p-1 bg-[#296CFF] rounded-full">
-                <SparklesIcon className="w-3 h-3 text-white" />
-              </div>
-            </motion.div>
-            
-            {/* QR Info */}
-            <div className="bg-[#296CFF]/10 border border-[#296CFF]/30 rounded-lg p-4">
-              <div className="flex items-start space-x-2">
-                <InformationCircleIcon className="w-4 h-4 text-[#296CFF] mt-0.5 flex-shrink-0" />
-                <div className="text-left">
-                  <p className="text-sm text-[#296CFF] font-medium mb-1">
-                    Verification Instructions
-                  </p>
-                  <p className="text-xs text-[#E0E0E0]">
-                    Scan this QR code with any QR reader to quickly access document verification data. 
-                    Contains encrypted hash and metadata for secure verification.
-                  </p>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="relative inline-block"
+              >
+                <img 
+                  src={qrCodeUrl} 
+                  alt="Document QR Code"
+                  className="w-72 h-72 mx-auto border-2 border-[rgb(var(--color-primary))] rounded-xl shadow-xl"
+                  style={{
+                    boxShadow: `0 0 20px rgba(var(--color-primary), 0.3)`
+                  }}
+                />
+                <div className="absolute top-3 right-3 p-2 bg-[rgb(var(--color-primary))] rounded-full">
+                  <SparklesIcon className="w-4 h-4 text-white" />
+                </div>
+              </motion.div>
+              
+              {/* QR Info */}
+              <div className="bg-[rgb(var(--color-primary)/0.1)] border border-[rgb(var(--color-primary)/0.3)] rounded-xl p-4">
+                <div className="flex items-start space-x-3">
+                  <InformationCircleIcon className="w-5 h-5 text-[rgb(var(--color-primary))] mt-0.5 flex-shrink-0" />
+                  <div className="text-left">
+                    <p className="text-sm text-[rgb(var(--color-primary))] font-medium mb-2">
+                      Verification Instructions
+                    </p>
+                    <p className="text-xs text-[rgb(var(--text-secondary))]">
+                      Scan this QR code with any QR reader to quickly access document verification data. 
+                      Contains encrypted hash and metadata for secure verification.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-center space-x-3">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              {/* Action Buttons */}
+              <div className="flex flex-wrap justify-center gap-3">
                 <Button 
                   onClick={downloadQRCode} 
                   size="sm" 
                   variant="primary"
-                  className="flex items-center space-x-2"
+                  icon={ArrowDownTrayIcon}
                 >
-                  <ArrowDownTrayIcon className="w-4 h-4" />
-                  <span>Download</span>
+                  Download
                 </Button>
-              </motion.div>
-              
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                
+                <Button 
+                  onClick={shareQRCode} 
+                  variant="secondary" 
+                  size="sm"
+                  icon={ShareIcon}
+                >
+                  Share
+                </Button>
+
                 <Button 
                   onClick={copyHashToClipboard} 
-                  variant="outline" 
+                  variant="secondary" 
                   size="sm"
-                  className="flex items-center space-x-2"
+                  icon={ClipboardIcon}
                 >
-                  <ClipboardIcon className="w-4 h-4" />
-                  <span>Copy Hash</span>
+                  Copy Hash
                 </Button>
-              </motion.div>
-            </div>
 
-            {/* Hash Preview */}
-            <div className="bg-[#0D0D0D] rounded-lg p-3 border border-[#333333]">
-              <div className="flex items-center space-x-2 mb-2">
-                <HashtagIcon className="w-3 h-3 text-[#8B5CF6]" />
-                <span className="text-xs font-medium text-[#8B5CF6]">Document Hash</span>
+                <Button 
+                  onClick={generateQRCode} 
+                  variant="ghost" 
+                  size="sm"
+                  icon={ArrowPathIcon}
+                  title="Regenerate QR Code"
+                >
+                  Regenerate
+                </Button>
               </div>
-              <code className="text-xs font-mono text-[#E0E0E0] break-all">
-                {hash.substring(0, 32)}...{hash.substring(hash.length - 8)}
-              </code>
-            </div>
-          </div>
-        ) : (
-          <div className="w-64 h-64 mx-auto bg-[#0D0D0D] rounded-xl flex items-center justify-center border-2 border-dashed border-[#333333] hover:border-[#296CFF] transition-colors duration-300">
-            <div className="text-center">
-              <QrCodeIcon className="w-12 h-12 text-[#666666] mx-auto mb-3" />
-              <Button 
-                onClick={generateQRCode} 
-                variant="primary"
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <SparklesIcon className="w-4 h-4" />
-                <span>Generate QR Code</span>
-              </Button>
-            </div>
-          </div>
-        )}
+
+              {/* Hash Preview */}
+              <div className="bg-[rgb(var(--surface-secondary))] rounded-xl p-4 border border-[rgb(var(--border-primary))]">
+                <div className="flex items-center space-x-2 mb-3">
+                  <HashtagIcon className="w-4 h-4 text-[rgb(139,92,246)]" />
+                  <span className="text-sm font-medium text-[rgb(139,92,246)]">Document Hash</span>
+                </div>
+                <HashDisplay 
+                  hash={hash}
+                  variant="compact"
+                  showLabel={false}
+                  size="sm"
+                />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="generate-button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-72 h-72 mx-auto bg-[rgb(var(--surface-secondary))] rounded-xl flex items-center justify-center border-2 border-dashed border-[rgb(var(--border-primary))] hover:border-[rgb(var(--color-primary))] transition-colors duration-300"
+            >
+              <div className="text-center">
+                <QrCodeIcon className="w-16 h-16 text-[rgb(var(--text-quaternary))] mx-auto mb-4" />
+                <Button 
+                  onClick={generateQRCode} 
+                  variant="primary"
+                  size="sm"
+                  icon={SparklesIcon}
+                >
+                  Generate QR Code
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Metadata Info */}
-      {metadata && (
-        <div className="mt-6 pt-4 border-t border-[#333333]">
-          <h4 className="text-sm font-medium text-[#E0E0E0] mb-2">QR Code Contains:</h4>
-          <div className="text-xs text-[#999999] space-y-1">
-            <div>• Document hash for verification</div>
-            <div>• Upload metadata and timestamp</div>
-            <div>• Verification type identifier</div>
-            <div>• Error correction for reliable scanning</div>
+      {metadata && qrCodeUrl && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-6 pt-6 border-t border-[rgb(var(--border-primary))]"
+        >
+          <h4 className="text-sm font-medium text-[rgb(var(--text-primary))] mb-3 flex items-center space-x-2">
+            <InformationCircleIcon className="w-4 h-4 text-[rgb(var(--color-primary))]" />
+            <span>QR Code Contains:</span>
+          </h4>
+          <div className="text-xs text-[rgb(var(--text-secondary))] space-y-2">
+            <div className="flex items-center space-x-2">
+              <span className="text-[rgb(var(--color-primary))] font-bold">•</span>
+              <span>Document hash for verification</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-[rgb(var(--color-primary))] font-bold">•</span>
+              <span>Upload metadata and timestamp</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-[rgb(var(--color-primary))] font-bold">•</span>
+              <span>Verification type identifier</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-[rgb(var(--color-primary))] font-bold">•</span>
+              <span>Error correction for reliable scanning</span>
+            </div>
           </div>
-        </div>
+        </motion.div>
       )}
     </motion.div>
   );

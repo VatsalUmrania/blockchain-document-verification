@@ -1,59 +1,51 @@
-// src/components/theme/ThemeToggle.jsx
-import React from 'react';
-import { motion } from 'framer-motion';
-import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
-import { useTheme } from '../../context/ThemeContext';
+import React, { useState, useEffect } from 'react';
 
 const ThemeToggle = () => {
-  const { theme, toggleTheme } = useTheme();
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  useEffect(() => {
+    // Check for saved theme preference or default to dark
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    const shouldUseDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+    
+    setIsDarkMode(shouldUseDark);
+    applyTheme(shouldUseDark);
+  }, []);
+
+  const applyTheme = (isDark) => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.removeAttribute('data-theme');
+    } else {
+      root.setAttribute('data-theme', 'light');
+    }
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  };
+
+  const toggleTheme = () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    applyTheme(newTheme);
+  };
 
   return (
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+    <button
       onClick={toggleTheme}
-      className="theme-toggle group"
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      className="theme-toggle"
+      aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
     >
-      {/* Animated Background Gradient */}
-      <motion.div
-        className="absolute inset-0 rounded-full bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        animate={{
-          background: theme === 'light' 
-            ? 'linear-gradient(45deg, #f59e0b, #f97316)' 
-            : 'linear-gradient(45deg, #3b82f6, #8b5cf6)'
-        }}
-      />
-      
-      {/* Toggle Thumb */}
-      <motion.div
-        className="theme-toggle-thumb"
-        animate={{
-          x: theme === 'dark' ? 28 : 2,
-          rotate: theme === 'dark' ? 180 : 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 500,
-          damping: 30
-        }}
-      >
-        <motion.div
-          key={theme}
-          initial={{ rotate: -180, opacity: 0, scale: 0 }}
-          animate={{ rotate: 0, opacity: 1, scale: 1 }}
-          exit={{ rotate: 180, opacity: 0, scale: 0 }}
-          transition={{ duration: 0.3 }}
-          className="flex items-center justify-center"
-        >
-          {theme === 'light' ? (
-            <SunIcon className="w-3 h-3 text-yellow-600" />
-          ) : (
-            <MoonIcon className="w-3 h-3 text-blue-400" />
-          )}
-        </motion.div>
-      </motion.div>
-    </motion.button>
+      {isDarkMode ? (
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+        </svg>
+      ) : (
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+        </svg>
+      )}
+    </button>
   );
 };
 

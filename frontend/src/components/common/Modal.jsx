@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ExclamationTriangleIcon, CheckCircleIcon, InformationCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
 const Modal = ({ 
   isOpen, 
@@ -12,7 +12,8 @@ const Modal = ({
   showCloseButton = true,
   title,
   closeOnBackdrop = true,
-  closeOnEscape = true
+  closeOnEscape = true,
+  variant = 'default' // 'default', 'blur', 'slide'
 }) => {
   useEffect(() => {
     const handleEscape = (event) => {
@@ -33,14 +34,41 @@ const Modal = ({
   }, [isOpen, onClose, closeOnEscape]);
 
   const sizeClasses = {
+    xs: 'max-w-xs',
     sm: 'max-w-md',
-    md: 'max-w-lg',
+    md: 'max-w-lg', 
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
+    '2xl': 'max-w-6xl',
     full: 'max-w-[95vw] max-h-[95vh]'
   };
 
+  const getAnimationVariants = () => {
+    switch (variant) {
+      case 'slide':
+        return {
+          initial: { opacity: 0, x: '100%' },
+          animate: { opacity: 1, x: 0 },
+          exit: { opacity: 0, x: '100%' }
+        };
+      case 'blur':
+        return {
+          initial: { opacity: 0, scale: 1.1, filter: 'blur(10px)' },
+          animate: { opacity: 1, scale: 1, filter: 'blur(0px)' },
+          exit: { opacity: 0, scale: 0.9, filter: 'blur(10px)' }
+        };
+      default:
+        return {
+          initial: { opacity: 0, scale: 0.9, y: 50 },
+          animate: { opacity: 1, scale: 1, y: 0 },
+          exit: { opacity: 0, scale: 0.9, y: 50 }
+        };
+    }
+  };
+
   if (!isOpen) return null;
+
+  const animationVariants = getAnimationVariants();
 
   return createPortal(
     <AnimatePresence mode="wait">
@@ -53,17 +81,20 @@ const Modal = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={closeOnBackdrop ? onClose : undefined}
-            className="fixed inset-0 bg-[#0D0D0D]/80 backdrop-blur-md"
+            className="fixed inset-0 backdrop-blur-md"
             style={{
-              backgroundImage: 'radial-gradient(circle at center, rgba(41, 108, 255, 0.1) 0%, rgba(13, 13, 13, 0.9) 70%)'
+              background: `
+                radial-gradient(circle at center, rgba(var(--color-primary), 0.1) 0%, rgba(var(--bg-primary), 0.9) 70%),
+                rgb(var(--bg-primary))/80
+              `
             }}
           />
           
           {/* Modal Content */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 50 }}
+            initial={animationVariants.initial}
+            animate={animationVariants.animate}
+            exit={animationVariants.exit}
             transition={{ 
               type: "spring", 
               stiffness: 300, 
@@ -72,16 +103,23 @@ const Modal = ({
             }}
             className={`
               relative z-10 w-full ${sizeClasses[size]} max-h-[90vh] 
-              bg-[#1A1A1A] border-2 border-[#333333] rounded-2xl 
-              shadow-2xl shadow-[#296CFF]/20 overflow-hidden ${className}
+              bg-[rgb(var(--surface-primary))] border-2 border-[rgb(var(--border-primary))] 
+              rounded-2xl shadow-2xl overflow-hidden ${className}
             `}
+            style={{
+              boxShadow: `
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(var(--color-primary), 0.1),
+                0 0 30px rgba(var(--color-primary), 0.15)
+              `
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
             {(title || showCloseButton) && (
-              <div className="flex items-center justify-between p-6 border-b border-[#333333] bg-[#121212]">
+              <div className="flex items-center justify-between p-6 border-b border-[rgb(var(--border-primary))] bg-[rgb(var(--surface-secondary))]">
                 {title && (
-                  <h2 className="text-xl font-bold text-white flex items-center space-x-2">
+                  <h2 className="text-xl font-bold text-[rgb(var(--text-primary))] flex items-center space-x-2">
                     <span>{title}</span>
                   </h2>
                 )}
@@ -90,8 +128,9 @@ const Modal = ({
                     whileHover={{ scale: 1.1, rotate: 90 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={onClose}
-                    className="p-2 text-[#666666] hover:text-[#296CFF] bg-[#1A1A1A] hover:bg-[#2A2A2A] border border-[#333333] hover:border-[#296CFF] rounded-lg transition-all duration-300"
+                    className="p-2 text-[rgb(var(--text-quaternary))] hover:text-[rgb(var(--color-error))] bg-[rgb(var(--surface-primary))] hover:bg-[rgb(var(--surface-hover))] border border-[rgb(var(--border-primary))] hover:border-[rgb(var(--color-error))] rounded-lg transition-all duration-300"
                     title="Close modal"
+                    aria-label="Close modal"
                   >
                     <XMarkIcon className="w-5 h-5" />
                   </motion.button>
@@ -100,13 +139,22 @@ const Modal = ({
             )}
 
             {/* Modal Body */}
-            <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+            <div className="overflow-y-auto max-h-[calc(90vh-120px)] scrollbar-thin scrollbar-thumb-[rgb(var(--color-primary))] scrollbar-track-[rgb(var(--surface-secondary))]">
               {children}
             </div>
 
             {/* Decorative border glow */}
             <div className="absolute inset-0 rounded-2xl pointer-events-none">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#296CFF]/20 via-transparent to-[#00C853]/20 opacity-50" />
+              <div 
+                className="absolute inset-0 rounded-2xl opacity-30"
+                style={{
+                  background: `linear-gradient(135deg, 
+                    rgba(var(--color-primary), 0.1) 0%, 
+                    transparent 50%, 
+                    rgba(var(--color-success), 0.1) 100%
+                  )`
+                }}
+              />
             </div>
           </motion.div>
 
@@ -115,10 +163,11 @@ const Modal = ({
             {[...Array(6)].map((_, i) => (
               <motion.div
                 key={i}
-                className="absolute w-2 h-2 bg-[#296CFF]/20 rounded-full"
+                className="absolute w-2 h-2 rounded-full"
                 style={{
                   left: `${Math.random() * 100}%`,
                   top: `${Math.random() * 100}%`,
+                  background: `rgba(var(--color-primary), 0.2)`
                 }}
                 animate={{
                   y: [0, -20, 0],
@@ -129,6 +178,7 @@ const Modal = ({
                   duration: 2 + Math.random() * 2,
                   repeat: Infinity,
                   delay: Math.random() * 2,
+                  repeatType: 'loop'
                 }}
               />
             ))}
@@ -140,62 +190,189 @@ const Modal = ({
   );
 };
 
-// Pre-styled modal variants
-export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Confirm", cancelText = "Cancel" }) => (
-  <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
-    <div className="p-6">
-      <p className="text-[#CCCCCC] text-lg mb-6">{message}</p>
-      <div className="flex justify-end space-x-3">
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onClose}
-          className="px-4 py-2 bg-[#333333] hover:bg-[#444444] text-[#CCCCCC] hover:text-white border border-[#555555] hover:border-[#666666] rounded-lg transition-all duration-300"
-        >
-          {cancelText}
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onConfirm}
-          className="px-4 py-2 bg-[#296CFF] hover:bg-[#2979FF] text-white border border-[#296CFF] hover:border-[#2979FF] rounded-lg shadow-lg shadow-[#296CFF]/30 hover:shadow-[#296CFF]/50 transition-all duration-300"
-        >
-          {confirmText}
-        </motion.button>
-      </div>
-    </div>
-  </Modal>
-);
-
-export const AlertModal = ({ isOpen, onClose, title, message, type = "info" }) => {
-  const typeStyles = {
-    info: { bg: 'bg-[#296CFF]/10', border: 'border-[#296CFF]', text: 'text-[#296CFF]' },
-    success: { bg: 'bg-[#00C853]/10', border: 'border-[#00C853]', text: 'text-[#00C853]' },
-    error: { bg: 'bg-[#FF4C4C]/10', border: 'border-[#FF4C4C]', text: 'text-[#FF4C4C]' },
-    warning: { bg: 'bg-[#FF9800]/10', border: 'border-[#FF9800]', text: 'text-[#FF9800]' }
+// Pre-styled modal variants with centralized theme
+export const ConfirmModal = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title = "Confirm Action", 
+  message, 
+  confirmText = "Confirm", 
+  cancelText = "Cancel",
+  variant = "primary", // 'primary', 'danger', 'success'
+  loading = false
+}) => {
+  const variants = {
+    primary: {
+      confirmButton: "btn-primary",
+      icon: <InformationCircleIcon className="w-6 h-6 text-[rgb(var(--color-primary))]" />
+    },
+    danger: {
+      confirmButton: `
+        px-4 py-2 bg-[rgb(var(--color-error))] hover:bg-[rgba(255,76,76,0.9)] 
+        text-white border border-[rgb(var(--color-error))] rounded-lg 
+        shadow-lg transition-all duration-300
+      `,
+      icon: <XCircleIcon className="w-6 h-6 text-[rgb(var(--color-error))]" />
+    },
+    success: {
+      confirmButton: "btn-success",
+      icon: <CheckCircleIcon className="w-6 h-6 text-[rgb(var(--color-success))]" />
+    }
   };
 
-  const styles = typeStyles[type];
+  const currentVariant = variants[variant] || variants.primary;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="p-6">
-        <div className={`p-4 rounded-lg ${styles.bg} border ${styles.border} mb-6`}>
-          <p className={`text-lg ${styles.text}`}>{message}</p>
+        <div className="flex items-start space-x-4 mb-6">
+          {currentVariant.icon}
+          <div>
+            <p className="text-[rgb(var(--text-primary))] text-lg font-medium mb-2">
+              Are you sure?
+            </p>
+            <p className="text-[rgb(var(--text-secondary))]">
+              {message}
+            </p>
+          </div>
         </div>
-        <div className="flex justify-end">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+        
+        <div className="flex justify-end space-x-3">
+          <button
             onClick={onClose}
-            className="px-6 py-2 bg-[#296CFF] hover:bg-[#2979FF] text-white border border-[#296CFF] hover:border-[#2979FF] rounded-lg shadow-lg shadow-[#296CFF]/30 hover:shadow-[#296CFF]/50 transition-all duration-300"
+            disabled={loading}
+            className="btn-secondary"
           >
-            OK
-          </motion.button>
+            {cancelText}
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className={currentVariant.confirmButton}
+          >
+            {loading ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Processing...</span>
+              </div>
+            ) : (
+              confirmText
+            )}
+          </button>
         </div>
       </div>
     </Modal>
   );
 };
+
+export const AlertModal = ({ 
+  isOpen, 
+  onClose, 
+  title, 
+  message, 
+  type = "info" 
+}) => {
+  const typeConfig = {
+    info: { 
+      bg: 'bg-[rgb(var(--color-primary)/0.1)]', 
+      border: 'border-[rgb(var(--color-primary))]', 
+      text: 'text-[rgb(var(--color-primary))]',
+      icon: <InformationCircleIcon className="w-6 h-6" />
+    },
+    success: { 
+      bg: 'bg-[rgb(var(--color-success)/0.1)]', 
+      border: 'border-[rgb(var(--color-success))]', 
+      text: 'text-[rgb(var(--color-success))]',
+      icon: <CheckCircleIcon className="w-6 h-6" />
+    },
+    error: { 
+      bg: 'bg-[rgb(var(--color-error)/0.1)]', 
+      border: 'border-[rgb(var(--color-error))]', 
+      text: 'text-[rgb(var(--color-error))]',
+      icon: <XCircleIcon className="w-6 h-6" />
+    },
+    warning: { 
+      bg: 'bg-[rgb(var(--color-warning)/0.1)]', 
+      border: 'border-[rgb(var(--color-warning))]', 
+      text: 'text-[rgb(var(--color-warning))]',
+      icon: <ExclamationTriangleIcon className="w-6 h-6" />
+    }
+  };
+
+  const config = typeConfig[type] || typeConfig.info;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
+      <div className="p-6">
+        <div className={`p-4 rounded-lg ${config.bg} border ${config.border} mb-6`}>
+          <div className={`flex items-start space-x-3 ${config.text}`}>
+            {config.icon}
+            <p className="text-lg flex-1">{message}</p>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className="btn-primary"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+// Loading Modal
+export const LoadingModal = ({ 
+  isOpen, 
+  title = "Loading...", 
+  message 
+}) => (
+  <Modal 
+    isOpen={isOpen} 
+    onClose={() => {}} 
+    title={title} 
+    size="sm" 
+    showCloseButton={false}
+    closeOnBackdrop={false}
+    closeOnEscape={false}
+  >
+    <div className="p-6 text-center">
+      <div className="flex justify-center mb-4">
+        <div className="w-8 h-8 border-2 border-[rgb(var(--color-primary))]/30 border-t-[rgb(var(--color-primary))] rounded-full animate-spin" />
+      </div>
+      {message && (
+        <p className="text-[rgb(var(--text-secondary))]">{message}</p>
+      )}
+    </div>
+  </Modal>
+);
+
+// Image Modal
+export const ImageModal = ({ 
+  isOpen, 
+  onClose, 
+  src, 
+  alt, 
+  title 
+}) => (
+  <Modal 
+    isOpen={isOpen} 
+    onClose={onClose} 
+    title={title} 
+    size="2xl"
+    className="bg-[rgb(var(--bg-primary))]"
+  >
+    <div className="p-4">
+      <img 
+        src={src} 
+        alt={alt} 
+        className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+      />
+    </div>
+  </Modal>
+);
 
 export default Modal;

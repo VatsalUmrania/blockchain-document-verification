@@ -1,60 +1,3 @@
-// import React, { useState } from 'react';
-// import { ToastContainer } from 'react-toastify';
-// import 'react-toastify/dist/ReactToastify.css';
-// import { Web3Provider } from './context/Web3Context';
-// import Navbar from './components/layout/Navbar';
-// import DocumentUpload from './components/document/DocumentUpload';
-// import VerificationPortal from './components/verification/VerificationPortal';
-// import Dashboard from './components/dashboard/Dashboard';
-// import AnalyticsDashboard from './components/analytics/AnalyticsDashboard';
-
-// function App() {
-//   const [activeTab, setActiveTab] = useState('dashboard');
-
-//   const renderActiveComponent = () => {
-//     switch (activeTab) {
-//       case 'upload':
-//         return <DocumentUpload />;
-//       case 'verify':
-//         return <VerificationPortal />;
-//       case 'analytics':
-//         return <AnalyticsDashboard />;
-//       default:
-//         return <Dashboard />;
-//     }
-//   };
-
-//   return (
-//     <Web3Provider>
-//       <div className="min-h-screen"> {/* Removed bg-gray-50 */}
-//         <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-//         <main className="py-8">
-//           {renderActiveComponent()}
-//         </main>
-//         <ToastContainer
-//           position="top-right"
-//           autoClose={3000}
-//           hideProgressBar={false}
-//           newestOnTop={false}
-//           closeOnClick
-//           rtl={false}
-//           pauseOnFocusLoss
-//           draggable
-//           pauseOnHover
-//           theme="dark" // Changed from "light" to "dark"
-//           className="toast-container"
-//           toastClassName="bg-surface/95 backdrop-blur-sm border border-primary-500/20 text-foreground"
-//           bodyClassName="text-sm"
-//           progressClassName="bg-accent-500"
-//         />
-//       </div>
-//     </Web3Provider>
-//   );
-// }
-
-// export default App;
-
-// App.jsx (Corrected routing)
 // import React from 'react';
 // import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 // import { ToastContainer } from 'react-toastify';
@@ -64,32 +7,41 @@
 // import { DocumentStatsProvider } from './context/DocumentStatsContext';
 // import Navbar from './components/layout/Navbar';
 // import Dashboard from './components/dashboard/Dashboard';
-// import DocumentUpload from './components/document/DocumentUpload';
+// import UploadPage from './components/document/DocumentUpload';
 // import VerificationPortal from './components/verification/VerificationPortal';
-// // import Analytics from './components/analytics/Analytics';
-
+// import ThirdPartyVerification from './components/verification/ThirdPartyVerification';
+// import DocumentIssuanceWorkflow from './components/issuance/DocumentIssuanceWorkflow';
+// import QRCodeScanner from './components/qr/QRCodeScanner';
+// import UserTypeSelection from './components/common/UserTypeSelection';
 
 // function App() {
 //   return (
 //     <Web3Provider>
 //       <DocumentStatsProvider>
 //         <Router>
-//           <div className="min-h-screen bg-gradient-to-br from-background via-surface to-background">
+//           <div className="min-h-screen bg-gradient-to-br from-[#0D0D0D] via-[#1A1A1A] to-[#121212]">
+//             {/* Navigation */}
 //             <Navbar />
-//             <main className="pt-20">
+
+//             {/* Main Content Area */}
+//             <main className="pt-20 min-h-screen">
 //               <Routes>
-//                 {/* Fix the route paths - they were all pointing to "/" */}
-//                 <Route path="/" element={<Dashboard />} />
-//                 <Route path="/upload" element={<DocumentUpload />} />
+//                 <Route path="/" element={<UserTypeSelection />} />
+//                 <Route path="/dashboard" element={<Dashboard />} />
+//                 <Route path="/upload" element={<UploadPage />} />
 //                 <Route path="/verify" element={<VerificationPortal />} />
-//                 {/* <Route path="/analytics" element={<Analytics />} /> */}
+//                 <Route path="/third-party-verify" element={<ThirdPartyVerification />} />
+//                 <Route path="/issue-document" element={<DocumentIssuanceWorkflow />} />
+//                 <Route path="/qr-scanner" element={<QRCodeScanner />} />
 //               </Routes>
 //             </main>
+
+//             {/* Toast Notifications */}
 //             <ToastContainer
-//               position="top-right"
-//               autoClose={3000}
+//               position="bottom-right"
+//               autoClose={4000}
 //               hideProgressBar={false}
-//               newestOnTop={false}
+//               newestOnTop={true}
 //               closeOnClick
 //               rtl={false}
 //               pauseOnFocusLoss
@@ -97,9 +49,9 @@
 //               pauseOnHover
 //               theme="dark"
 //               className="toast-container"
-//               toastClassName="bg-surface/95 backdrop-blur-sm border border-primary-500/20 text-foreground"
-//               bodyClassName="text-sm"
-//               progressClassName="bg-accent-500"
+//               toastClassName="!bg-[#1A1A1A] !border-2 !border-[#296CFF] !text-[#E0E0E0] !rounded-xl !shadow-lg"
+//               bodyClassName="text-sm font-medium"
+//               progressClassName="!bg-gradient-to-r !from-[#296CFF] !to-[#00C853]"
 //             />
 //           </div>
 //         </Router>
@@ -110,7 +62,7 @@
 
 // export default App;
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -127,11 +79,55 @@ import QRCodeScanner from './components/qr/QRCodeScanner';
 import UserTypeSelection from './components/common/UserTypeSelection';
 
 function App() {
+  const [theme, setTheme] = useState('dark');
+
+  // Initialize theme on app start
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const shouldUseDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+    
+    setTheme(shouldUseDark ? 'dark' : 'light');
+    applyTheme(shouldUseDark);
+  }, []);
+
+  const applyTheme = (isDark) => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.removeAttribute('data-theme');
+    } else {
+      root.setAttribute('data-theme', 'light');
+    }
+  };
+
+  // Listen for theme changes from localStorage (for cross-tab synchronization)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'theme') {
+        const newTheme = e.newValue === 'light' ? 'light' : 'dark';
+        setTheme(newTheme);
+        applyTheme(newTheme === 'dark');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   return (
     <Web3Provider>
       <DocumentStatsProvider>
         <Router>
-          <div className="min-h-screen bg-gradient-to-br from-[#0D0D0D] via-[#1A1A1A] to-[#121212]">
+          <div 
+            className="min-h-screen transition-colors duration-300"
+            style={{
+              background: `linear-gradient(135deg, 
+                rgb(var(--bg-primary)), 
+                rgb(var(--surface-primary)), 
+                rgb(var(--surface-secondary))
+              )`
+            }}
+          >
             {/* Navigation */}
             <Navbar />
 
@@ -159,11 +155,11 @@ function App() {
               pauseOnFocusLoss
               draggable
               pauseOnHover
-              theme="dark"
+              theme={theme}
               className="toast-container"
-              toastClassName="!bg-[#1A1A1A] !border-2 !border-[#296CFF] !text-[#E0E0E0] !rounded-xl !shadow-lg"
+              toastClassName="!bg-[rgb(var(--surface-primary))] !border-2 !border-[rgb(var(--color-primary))] !text-[rgb(var(--text-primary))] !rounded-xl !shadow-lg"
               bodyClassName="text-sm font-medium"
-              progressClassName="!bg-gradient-to-r !from-[#296CFF] !to-[#00C853]"
+              progressClassName="!bg-gradient-to-r !from-[rgb(var(--color-primary))] !to-[rgb(var(--color-success))]"
             />
           </div>
         </Router>
