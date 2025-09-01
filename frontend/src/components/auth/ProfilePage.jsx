@@ -25,19 +25,34 @@ const ProfilePage = () => {
             try {
                 const response = await getProfile();
                 if (response.success) {
+                    // Handle the case where profile might not exist
                     setProfileData({
                         name: response.user.name || '',
                         institutionName: response.user.institutionName || '',
                         profile: {
                             bio: response.user.profile?.bio || '',
                             website: response.user.profile?.website || '',
-                            contactEmail: response.user.profile?.contactEmail || '',
+                            contactEmail: response.user.profile?.contactEmail || response.user.email || '',
                             phone: response.user.profile?.phone || '',
                             address: response.user.profile?.address || ''
                         }
                     });
                 }
             } catch (error) {
+                // Fallback to user data from context if API fails
+                if (user) {
+                    setProfileData({
+                        name: user.name || '',
+                        institutionName: user.institutionName || '',
+                        profile: {
+                            bio: user.profile?.bio || '',
+                            website: user.profile?.website || '',
+                            contactEmail: user.profile?.contactEmail || user.email || '',
+                            phone: user.profile?.phone || '',
+                            address: user.profile?.address || ''
+                        }
+                    });
+                }
                 toast.error('Failed to fetch profile');
             } finally {
                 setFetching(false);
@@ -45,7 +60,7 @@ const ProfilePage = () => {
         };
 
         fetchProfile();
-    }, [getProfile]);
+    }, [getProfile, user]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;

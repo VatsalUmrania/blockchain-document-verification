@@ -48,6 +48,7 @@ router.post("/register", async (req, res) => {
         walletAddress: user.walletAddress,
         institutionName: user.institutionName,
         role: user.role,
+        profile: user.profile,
       },
     });
   } catch (error) {
@@ -96,6 +97,7 @@ router.post("/login", async (req, res) => {
         walletAddress: user.walletAddress,
         institutionName: user.institutionName,
         role: user.role,
+        profile: user.profile,
       },
     });
   } catch (error) {
