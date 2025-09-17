@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilePlus,
   Building,
-  User,
-  Calendar,
   Upload,
   CheckCircle,
   AlertTriangle,
@@ -26,8 +24,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -42,11 +38,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useWeb3 } from '../../context/Web3Context';
 import BlockchainService from '../../services/blockchainService';
-import { DocumentMetadata, DOCUMENT_TYPES, INSTITUTION_TYPES } from '../../types/document.types';
+import { DocumentMetadata } from '../../types/document.types';
 import QRCodeGenerator from '../qr/QRCodeGenerator';
 
 // Types and Interfaces
@@ -78,13 +73,6 @@ interface IssuanceResult {
   error?: string;
 }
 
-interface InstitutionInfo {
-  name: string;
-  registrationNumber: string;
-  contactInfo: string;
-  isVerified: boolean;
-}
-
 interface ValidationResult {
   isValid: boolean;
   errors: string[];
@@ -94,7 +82,8 @@ const DocumentIssuanceWorkflow: React.FC = () => {
   // State
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [metadata, setMetadata] = useState<DocumentMetadata>(new DocumentMetadata());
+  // FIX: Initialize with an empty object to prevent constructor error
+  const [metadata, setMetadata] = useState<DocumentMetadata>(new DocumentMetadata({}));
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [issuanceResult, setIssuanceResult] = useState<IssuanceResult | null>(null);
   const [institutionRegistered, setInstitutionRegistered] = useState<boolean>(false);
@@ -105,7 +94,7 @@ const DocumentIssuanceWorkflow: React.FC = () => {
   const [verificationAddress, setVerificationAddress] = useState<string>('');
 
   // Web3 Context
-  const { provider, signer, account, isConnected, connectWallet } = useWeb3();
+  const { provider, signer, isConnected, connectWallet } = useWeb3();
 
   // Institution type options with icons
   const institutionTypeOptions: InstitutionTypeOption[] = [
@@ -192,7 +181,7 @@ const DocumentIssuanceWorkflow: React.FC = () => {
                 issuerName: institutionInfo.name,
                 issuerRegistrationNumber: institutionInfo.registrationNumber,
                 issuerContact: institutionInfo.contactInfo,
-                issuerType: 'university'
+                issuerType: 'university' // Default or map from contract
               };
               return new DocumentMetadata(updatedData);
             });
@@ -441,7 +430,8 @@ const DocumentIssuanceWorkflow: React.FC = () => {
   const resetWorkflow = useCallback((): void => {
     setCurrentStep(1);
     setSelectedFile(null);
-    setMetadata(new DocumentMetadata());
+    // FIX: Initialize with an empty object to prevent constructor error
+    setMetadata(new DocumentMetadata({}));
     setIssuanceResult(null);
     setInstitutionRegistered(false);
   }, []);
@@ -462,7 +452,7 @@ const DocumentIssuanceWorkflow: React.FC = () => {
 
   return (
     <div className="min-h-screen py-8">
-      <div 
+      <div
         className="absolute inset-0 opacity-30 pointer-events-none"
         style={{
           background: `
@@ -493,14 +483,15 @@ const DocumentIssuanceWorkflow: React.FC = () => {
         </div>
 
         {/* Connection Status */}
+       
         {!isConnected && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <Alert className="mb-6 border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="flex items-center justify-between">
+            <Alert className="mb-6 flex items-center gap-4 border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-600" />
+              <AlertDescription className="flex w-full items-center justify-between">
                 <span>Please connect your wallet to issue documents on the blockchain.</span>
                 <Button onClick={connectWallet} size="sm">
                   Connect Wallet
@@ -509,7 +500,6 @@ const DocumentIssuanceWorkflow: React.FC = () => {
             </Alert>
           </motion.div>
         )}
-
         {/* Progress Steps */}
         <Card className="mb-8">
           <CardContent className="p-6">
