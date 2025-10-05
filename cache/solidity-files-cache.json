@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "D:\\Projects\\blockchain-document-verification\\contracts\\DocumentVerification.sol": {
-      "lastModificationDate": 1759680408696,
-      "contentHash": "3dac66c370b0a998bac0d3d14e62a296",
+      "lastModificationDate": 1759684229565,
+      "contentHash": "4039bf20f0fc2398ef0990acb0a650b2",
       "sourceName": "contracts/DocumentVerification.sol",
       "solcConfig": {
         "version": "0.8.19",

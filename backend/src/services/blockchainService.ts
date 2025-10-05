@@ -707,116 +707,229 @@ class BlockchainService {
     }
   }
 
+  // public async getIssuedDocuments(
+  //   issuerAddress: string, 
+  //   limit: number = 10, 
+  //   offset: number = 0
+  // ): Promise<DocumentDetails[]> {
+  //   try {
+  //     console.log(`📄 Fetching documents for issuer: ${issuerAddress} (limit=${limit}, offset=${offset})`);
+      
+  //     const normalizedAddress = issuerAddress.toLowerCase();
+
+  //     const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
+  //     const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest');
+      
+  //     console.log(`   Found ${issuedEvents.length} issued events`);
+
+  //     if (issuedEvents.length === 0) {
+  //       return [];
+  //     }
+
+  //     const revokeFilter = this.contract.filters.DocumentRevoked();
+  //     const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
+  //     const revokedByThisIssuer = allRevokedEvents.filter(e => 
+  //       e.args?.issuer?.toLowerCase() === normalizedAddress
+  //     );
+  //     const revokedHashes = new Set(revokedByThisIssuer.map(e => e.args?.documentHash));
+
+  //     const paginatedEvents = issuedEvents.slice(offset, offset + limit);
+
+  //     const documents: DocumentDetails[] = [];
+
+  //     for (const event of paginatedEvents) {
+  //       try {
+  //         const documentHash = event.args?.documentHash;
+          
+  //         if (!documentHash) {
+  //           console.warn('⚠️  Event missing documentHash:', event);
+  //           continue;
+  //         }
+
+  //         const doc = await this.contract.documents(documentHash);
+          
+  //         console.log(`   📋 Document ${documentHash}:`, {
+  //           issuerName: doc.issuerName,
+  //           documentType: doc.documentType,
+  //           title: doc.title || 'N/A',  // ← LOG TITLE
+  //           recipientName: doc.recipientName,
+  //           isActive: doc.isActive
+  //         });
+
+  //         const isRevoked = revokedHashes.has(documentHash);
+  //         const expirationDate = doc.expirationDate && doc.expirationDate.toNumber() > 0
+  //           ? new Date(doc.expirationDate.toNumber() * 1000)
+  //           : null;
+  //         const isExpired = expirationDate ? expirationDate < new Date() : false;
+
+  //         let status: 'active' | 'verified' | 'revoked' | 'expired';
+  //         if (isRevoked) {
+  //           status = 'revoked';
+  //         } else if (isExpired) {
+  //           status = 'expired';
+  //         } else if (doc.isActive) {
+  //           status = 'verified';
+  //         } else {
+  //           status = 'active';
+  //         }
+
+  //         documents.push({
+  //           documentHash,
+  //           issuer: doc.issuer || issuerAddress,
+  //           issuerName: doc.issuerName || 'Unknown Institution',
+  //           documentType: doc.documentType || 'other',
+  //           title: doc.title || '',  // ← ADD TITLE
+  //           recipientName: doc.recipientName || 'Unknown Recipient',
+  //           recipientId: doc.recipientId || '',
+  //           issuanceDate: new Date(doc.issuanceDate.toNumber() * 1000),
+  //           expirationDate,
+  //           status,
+  //           isActive: doc.isActive && !isRevoked && !isExpired,
+  //           isRevoked,
+  //           transactionHash: event.transactionHash,
+  //           blockNumber: event.blockNumber
+  //         });
+  //       } catch (docError) {
+  //         console.error(`❌ Error fetching document details for ${event.args?.documentHash}:`, docError);
+  //         documents.push({
+  //           documentHash: event.args?.documentHash || '',
+  //           issuer: issuerAddress,
+  //           issuerName: 'Unknown Institution',
+  //           documentType: event.args?.documentType || 'other',
+  //           title: '',  // ← ADD EMPTY TITLE
+  //           recipientName: event.args?.recipientName || 'Unknown Recipient',
+  //           recipientId: '',
+  //           issuanceDate: new Date(),
+  //           expirationDate: null,
+  //           status: 'active',
+  //           isActive: false,
+  //           isRevoked: false,
+  //           transactionHash: event.transactionHash,
+  //           blockNumber: event.blockNumber
+  //         });
+  //       }
+  //     }
+
+  //     console.log(`   ✅ Returning ${documents.length} documents with full details`);
+  //     return documents;
+  //   } catch (error) {
+  //     console.error('❌ Error getting issued documents:', error);
+  //     return [];
+  //   }
+  // }
+
   public async getIssuedDocuments(
-    issuerAddress: string, 
-    limit: number = 10, 
-    offset: number = 0
-  ): Promise<DocumentDetails[]> {
-    try {
-      console.log(`📄 Fetching documents for issuer: ${issuerAddress} (limit=${limit}, offset=${offset})`);
-      
-      const normalizedAddress = issuerAddress.toLowerCase();
+  issuerAddress: string, 
+  limit: number = 10, 
+  offset: number = 0
+): Promise<DocumentDetails[]> {
+  try {
+    console.log(`📄 Fetching documents for issuer: ${issuerAddress} (limit=${limit}, offset=${offset})`);
+    
+    const normalizedAddress = issuerAddress.toLowerCase();
 
-      const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
-      const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest');
-      
-      console.log(`   Found ${issuedEvents.length} issued events`);
+    const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
+    const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest');
+    
+    console.log(`   Found ${issuedEvents.length} issued events`);
 
-      if (issuedEvents.length === 0) {
-        return [];
-      }
-
-      const revokeFilter = this.contract.filters.DocumentRevoked();
-      const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
-      const revokedByThisIssuer = allRevokedEvents.filter(e => 
-        e.args?.issuer?.toLowerCase() === normalizedAddress
-      );
-      const revokedHashes = new Set(revokedByThisIssuer.map(e => e.args?.documentHash));
-
-      const paginatedEvents = issuedEvents.slice(offset, offset + limit);
-
-      const documents: DocumentDetails[] = [];
-
-      for (const event of paginatedEvents) {
-        try {
-          const documentHash = event.args?.documentHash;
-          
-          if (!documentHash) {
-            console.warn('⚠️  Event missing documentHash:', event);
-            continue;
-          }
-
-          const doc = await this.contract.documents(documentHash);
-          
-          console.log(`   📋 Document ${documentHash}:`, {
-            issuerName: doc.issuerName,
-            documentType: doc.documentType,
-            title: doc.title || 'N/A',  // ← LOG TITLE
-            recipientName: doc.recipientName,
-            isActive: doc.isActive
-          });
-
-          const isRevoked = revokedHashes.has(documentHash);
-          const expirationDate = doc.expirationDate && doc.expirationDate.toNumber() > 0
-            ? new Date(doc.expirationDate.toNumber() * 1000)
-            : null;
-          const isExpired = expirationDate ? expirationDate < new Date() : false;
-
-          let status: 'active' | 'verified' | 'revoked' | 'expired';
-          if (isRevoked) {
-            status = 'revoked';
-          } else if (isExpired) {
-            status = 'expired';
-          } else if (doc.isActive) {
-            status = 'verified';
-          } else {
-            status = 'active';
-          }
-
-          documents.push({
-            documentHash,
-            issuer: doc.issuer || issuerAddress,
-            issuerName: doc.issuerName || 'Unknown Institution',
-            documentType: doc.documentType || 'other',
-            title: doc.title || '',  // ← ADD TITLE
-            recipientName: doc.recipientName || 'Unknown Recipient',
-            recipientId: doc.recipientId || '',
-            issuanceDate: new Date(doc.issuanceDate.toNumber() * 1000),
-            expirationDate,
-            status,
-            isActive: doc.isActive && !isRevoked && !isExpired,
-            isRevoked,
-            transactionHash: event.transactionHash,
-            blockNumber: event.blockNumber
-          });
-        } catch (docError) {
-          console.error(`❌ Error fetching document details for ${event.args?.documentHash}:`, docError);
-          documents.push({
-            documentHash: event.args?.documentHash || '',
-            issuer: issuerAddress,
-            issuerName: 'Unknown Institution',
-            documentType: event.args?.documentType || 'other',
-            title: '',  // ← ADD EMPTY TITLE
-            recipientName: event.args?.recipientName || 'Unknown Recipient',
-            recipientId: '',
-            issuanceDate: new Date(),
-            expirationDate: null,
-            status: 'active',
-            isActive: false,
-            isRevoked: false,
-            transactionHash: event.transactionHash,
-            blockNumber: event.blockNumber
-          });
-        }
-      }
-
-      console.log(`   ✅ Returning ${documents.length} documents with full details`);
-      return documents;
-    } catch (error) {
-      console.error('❌ Error getting issued documents:', error);
+    if (issuedEvents.length === 0) {
       return [];
     }
+
+    const revokeFilter = this.contract.filters.DocumentRevoked();
+    const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
+    const revokedByThisIssuer = allRevokedEvents.filter(e => 
+      e.args?.issuer?.toLowerCase() === normalizedAddress
+    );
+    const revokedHashes = new Set(revokedByThisIssuer.map(e => e.args?.documentHash));
+
+    const paginatedEvents = issuedEvents.slice(offset, offset + limit);
+
+    const documents: DocumentDetails[] = [];
+
+    for (const event of paginatedEvents) {
+      try {
+        const documentHash = event.args?.documentHash;
+        
+        if (!documentHash) {
+          console.warn('⚠️  Event missing documentHash:', event);
+          continue;
+        }
+
+        const doc = await this.contract.documents(documentHash);
+        
+        console.log(`   📋 Document ${documentHash}:`, {
+          issuerName: doc.issuerName,
+          documentType: doc.documentType,
+          title: doc.title || 'N/A',
+          recipientName: doc.recipientName,
+          isActive: doc.isActive
+        });
+
+        const isRevoked = revokedHashes.has(documentHash);
+        
+        // ← FIXED: Use Number() instead of .toNumber()
+        const expirationDate = doc.expirationDate && Number(doc.expirationDate) > 0
+          ? new Date(Number(doc.expirationDate) * 1000)
+          : null;
+        const isExpired = expirationDate ? expirationDate < new Date() : false;
+
+        let status: 'active' | 'verified' | 'revoked' | 'expired';
+        if (isRevoked) {
+          status = 'revoked';
+        } else if (isExpired) {
+          status = 'expired';
+        } else if (doc.isActive) {
+          status = 'verified';
+        } else {
+          status = 'active';
+        }
+
+        documents.push({
+          documentHash,
+          issuer: doc.issuer || issuerAddress,
+          issuerName: doc.issuerName || 'Unknown Institution',
+          documentType: doc.documentType || 'other',
+          title: doc.title || '',
+          recipientName: doc.recipientName || 'Unknown Recipient',
+          recipientId: doc.recipientId || '',
+          issuanceDate: new Date(Number(doc.issuanceDate) * 1000),  // ← FIXED
+          expirationDate,
+          status,
+          isActive: doc.isActive && !isRevoked && !isExpired,
+          isRevoked,
+          transactionHash: event.transactionHash,
+          blockNumber: event.blockNumber
+        });
+      } catch (docError) {
+        console.error(`❌ Error fetching document details for ${event.args?.documentHash}:`, docError);
+        documents.push({
+          documentHash: event.args?.documentHash || '',
+          issuer: issuerAddress,
+          issuerName: 'Unknown Institution',
+          documentType: event.args?.documentType || 'other',
+          title: '',
+          recipientName: event.args?.recipientName || 'Unknown Recipient',
+          recipientId: '',
+          issuanceDate: new Date(),
+          expirationDate: null,
+          status: 'active',
+          isActive: false,
+          isRevoked: false,
+          transactionHash: event.transactionHash,
+          blockNumber: event.blockNumber
+        });
+      }
+    }
+
+    console.log(`   ✅ Returning ${documents.length} documents with full details`);
+    return documents;
+  } catch (error) {
+    console.error('❌ Error getting issued documents:', error);
+    return [];
   }
+}
 
   public async getDocument(documentHash: string): Promise<DocumentDetails | null> {
     try {
@@ -852,8 +965,10 @@ class BlockchainService {
         title: doc.title || '',  // ← ADD TITLE
         recipientName: doc.recipientName,
         recipientId: doc.recipientId,
-        issuanceDate: new Date(doc.issuanceDate.toNumber() * 1000),
-        expirationDate,
+        issuanceDate: new Date(Number(doc.issuanceDate) * 1000),
+        expirationDate: Number(doc.expirationDate) > 0
+          ? new Date(Number(doc.expirationDate) * 1000)
+          : null,
         status,
         isActive: doc.isActive && !isRevoked && !isExpired,
         isRevoked,
