@@ -1,37 +1,48 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 
-export interface IUser extends Document {
-  address: string;
-  ensName?: string;
-  lastLoginAt: Date;
-  createdAt: Date;
-  nonce: string;
+// Define the possible roles for a user
+export enum UserRole {
+  INSTITUTE = 'Institute',
+  INDIVIDUAL = 'Individual',
 }
 
-const userSchema = new Schema<IUser>({
-  address: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true
-  },
-  ensName: {
-    type: String,
-    trim: true
-  },
-  lastLoginAt: {
-    type: Date,
-    default: Date.now
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  nonce: {
-    type: String,
-    required: true
-  }
-});
+// Define the interface for the User document for TypeScript
+export interface IUser extends Document {
+  address: string;
+  role: UserRole;
+  ensName?: string;
+  lastLoginAt: Date;
+}
 
-export const User = mongoose.model<IUser>('User', userSchema);
+const userSchema = new Schema<IUser>(
+  {
+    address: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      index: true,
+    },
+    role: {
+      type: String,
+      enum: Object.values(UserRole),
+      required: true,
+      default: UserRole.INDIVIDUAL,
+    },
+    ensName: {
+      type: String,
+      required: false,
+    },
+    lastLoginAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    timestamps: true, // Automatically adds createdAt and updatedAt
+  }
+);
+
+const User = model<IUser>('User', userSchema);
+
+export default User;

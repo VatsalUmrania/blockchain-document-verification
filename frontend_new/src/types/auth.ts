@@ -1,9 +1,10 @@
 export interface User {
-    id: string;
-    address: string;
-    ensName?: string;
-    lastLoginAt: string;
-  }
+  id: string;
+  address: string;
+  role: 'Institute' | 'Individual'; // --- ADDED: The user's role from the backend ---
+  ensName?: string;
+  lastLoginAt: string;
+}
   
   export interface AuthState {
     user: User | null;
