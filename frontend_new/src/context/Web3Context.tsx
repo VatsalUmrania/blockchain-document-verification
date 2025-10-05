@@ -1,12 +1,19 @@
 // import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 // import { ethers, BrowserProvider, Eip1193Provider, getAddress } from 'ethers';
 // import { SiweMessage } from 'siwe';
+// import { toast } from 'sonner';
 // import { User } from '../types/auth';
+
+// // API Base URL
+// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // // Augment the Window interface to include the standard Ethereum provider
 // declare global {
 //   interface Window {
-//     ethereum?: Eip1193Provider;
+//     ethereum?: Eip1193Provider & {
+//       on?: (event: string, handler: (...args: any[]) => void) => void;
+//       removeListener?: (event: string, handler: (...args: any[]) => void) => void;
+//     };
 //   }
 // }
 
@@ -17,6 +24,7 @@
 //   signer: ethers.Signer | null;
 //   account: string | null;
 //   chainId: bigint | null;
+//   balance: string;
 //   isConnected: boolean;
 //   isConnecting: boolean;
   
@@ -55,6 +63,7 @@
 //   const [signer, setSigner] = useState<ethers.Signer | null>(null);
 //   const [account, setAccount] = useState<string | null>(null);
 //   const [chainId, setChainId] = useState<bigint | null>(null);
+//   const [balance, setBalance] = useState<string>('0');
 //   const [isConnected, setIsConnected] = useState(false);
 //   const [isConnecting, setIsConnecting] = useState(false);
   
@@ -64,24 +73,35 @@
 //   const [isAuthenticated, setIsAuthenticated] = useState(false);
 //   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
+//   // Disconnect wallet and clear all state
 //   const disconnectWallet = useCallback(() => {
 //     setProvider(null);
 //     setSigner(null);
 //     setAccount(null);
 //     setChainId(null);
+//     setBalance('0');
 //     setIsConnected(false);
     
 //     // Clear session from local storage
 //     localStorage.removeItem('authToken');
+//     localStorage.removeItem('token');
 //     localStorage.removeItem('user');
 //     setToken(null);
 //     setUser(null);
 //     setIsAuthenticated(false);
+
+//     console.log('🔌 Wallet disconnected');
+//     toast.info('Wallet Disconnected', {
+//       description: 'Your wallet has been disconnected'
+//     });
 //   }, []);
 
+//   // Connect to MetaMask wallet
 //   const connectWallet = useCallback(async () => {
 //     if (!window.ethereum) {
-//       alert('Please install MetaMask!');
+//       toast.error('MetaMask Not Found', {
+//         description: 'Please install MetaMask to use this application'
+//       });
 //       return;
 //     }
 
@@ -94,21 +114,34 @@
 //         const web3Signer = await web3Provider.getSigner();
 //         const userAccount = await web3Signer.getAddress();
 //         const network = await web3Provider.getNetwork();
+//         const userBalance = await web3Provider.getBalance(userAccount);
 
 //         setProvider(web3Provider);
 //         setSigner(web3Signer);
 //         setAccount(getAddress(userAccount));
 //         setChainId(network.chainId);
+//         setBalance(ethers.formatEther(userBalance));
 //         setIsConnected(true);
+
+//         console.log('✅ Wallet connected:', userAccount);
+//         console.log('   Network:', network.name, `(Chain ID: ${network.chainId})`);
+//         console.log('   Balance:', ethers.formatEther(userBalance), 'ETH');
+        
+//         toast.success('Wallet Connected', {
+//           description: `Connected to ${userAccount.substring(0, 6)}...${userAccount.substring(38)}`
+//         });
 //       } else {
 //         throw new Error("No accounts found.");
 //       }
 
 //     } catch (error: any) {
-//       console.error('Failed to connect wallet:', error);
+//       console.error('❌ Failed to connect wallet:', error);
 //       disconnectWallet();
+      
 //       if (error.code !== 4001) { // 4001 is user rejection code
-//         alert('Failed to connect wallet. Please try again.');
+//         toast.error('Connection Failed', {
+//           description: error.message || 'Failed to connect wallet. Please try again.'
+//         });
 //       }
 //     } finally {
 //       setIsConnecting(false);
@@ -117,7 +150,7 @@
 
 //   // Effect to restore session from local storage on initial load
 //   useEffect(() => {
-//     const savedToken = localStorage.getItem('authToken');
+//     const savedToken = localStorage.getItem('token') || localStorage.getItem('authToken');
 //     const savedUser = localStorage.getItem('user');
     
 //     if (savedToken && savedUser) {
@@ -126,87 +159,165 @@
 //         setToken(savedToken);
 //         setUser(userData);
 //         setIsAuthenticated(true);
-//         // Silently try to reconnect the wallet if a session exists
-//         connectWallet();
+//         console.log('✅ Session restored from localStorage');
+//         console.log('   User:', userData.address);
+//         console.log('   Role:', userData.role);
 //       } catch (error) {
-//         console.error('Failed to restore session:', error);
-//         disconnectWallet();
+//         console.error('❌ Failed to restore session:', error);
+//         // Clear invalid data
+//         localStorage.removeItem('token');
+//         localStorage.removeItem('authToken');
+//         localStorage.removeItem('user');
 //       }
 //     }
-//   }, [connectWallet, disconnectWallet]);
+//   }, []); // Run only once on mount
   
-//   const signInWithEthereum = async () => {
+//   // Sign in with Ethereum (SIWE)
+//   const signInWithEthereum = useCallback(async () => {
 //     if (!signer || !account || !chainId) {
-//       alert("Wallet not connected. Please connect your wallet first.");
+//       toast.error('Wallet Not Connected', {
+//         description: 'Please connect your wallet first'
+//       });
 //       return;
 //     }
 
 //     setIsAuthenticating(true);
 //     try {
-//       // 1. Get a unique nonce from the backend
-//       const nonceResponse = await fetch('http://localhost:5000/api/auth/nonce');
+//       console.log('🔐 Starting SIWE authentication...');
+
+//       // Step 1: Get nonce from backend
+//       console.log('📝 Requesting nonce from backend...');
+//       const nonceResponse = await fetch(`${API_BASE_URL}/api/auth/nonce`, {
+//         method: 'GET',
+//         credentials: 'include'
+//       });
+
 //       if (!nonceResponse.ok) {
 //         throw new Error(`Failed to get nonce: ${nonceResponse.statusText}`);
 //       }
-//       const nonce = await nonceResponse.text();
+
+//       const nonceData = await nonceResponse.json();
+//       const nonce = nonceData.nonce;
+//       console.log('✅ Nonce received:', nonce);
       
 //       const checksumAddress = getAddress(account);
 
-//       // 2. Create the SIWE message object
+//       // Step 2: Create the SIWE message
 //       const siweMessage = new SiweMessage({
 //         domain: window.location.host,
 //         address: checksumAddress,
-//         statement: 'Sign in to Blockchain Document Verification',
+//         statement: 'Sign in to Blockchain Document Verification with Ethereum',
 //         uri: window.location.origin,
 //         version: '1',
-//         chainId: Number(chainId), // Convert BigInt to number for SIWE
+//         chainId: Number(chainId),
 //         nonce: nonce,
 //       });
 
-//       // 3. Prepare the message string for the user to sign
+//       // Step 3: Prepare and sign the message
 //       const messageToSign = siweMessage.prepareMessage();
-//       const signature = await signer.signMessage(messageToSign);
+//       console.log('📄 SIWE message prepared');
 
-//       // 4. Send the structured siweMessage OBJECT to the backend for verification
-//       const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({ message: siweMessage, signature }),
+//       toast.info('Signature Required', {
+//         description: 'Please sign the message in MetaMask'
 //       });
 
-//       if (!loginResponse.ok) {
-//         const errorData = await loginResponse.json();
-//         throw new Error(errorData.error || 'Login failed');
+//       const signature = await signer.signMessage(messageToSign);
+//       console.log('✍️ Message signed successfully');
+
+//       // Step 4: Verify with backend
+//       console.log('🔄 Sending verification to backend...');
+//       const verifyResponse = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+//         method: 'POST',
+//         headers: { 
+//           'Content-Type': 'application/json'
+//         },
+//         credentials: 'include',
+//         body: JSON.stringify({ 
+//           message: messageToSign,
+//           signature 
+//         }),
+//       });
+
+//       if (!verifyResponse.ok) {
+//         const errorData = await verifyResponse.json();
+//         throw new Error(errorData.error || 'Verification failed');
 //       }
 
-//       // 5. On success, save the session and update the state
-//       const { token: authToken, user: userData } = await loginResponse.json();
+//       // Step 5: Save session
+//       const responseData = await verifyResponse.json();
+//       console.log('✅ Verification response received');
 
-//       localStorage.setItem('authToken', authToken);
-//       localStorage.setItem('user', JSON.stringify(userData));
-      
-//       setToken(authToken);
-//       setUser(userData);
-//       setIsAuthenticated(true);
+//       if (responseData.success && responseData.token) {
+//         const authToken = responseData.token;
+//         const userData = responseData.user;
+
+//         // Store in localStorage (both keys for compatibility)
+//         localStorage.setItem('token', authToken);
+//         localStorage.setItem('authToken', authToken);
+//         localStorage.setItem('user', JSON.stringify(userData));
+        
+//         setToken(authToken);
+//         setUser(userData);
+//         setIsAuthenticated(true);
+
+//         console.log('✅ Authentication successful!');
+//         console.log('   User ID:', userData.id);
+//         console.log('   Address:', userData.address);
+//         console.log('   Role:', userData.role);
+        
+//         toast.success('Signed In Successfully', {
+//           description: `Welcome back, ${userData.role}!`
+//         });
+//       } else {
+//         throw new Error('Invalid verification response');
+//       }
+
 //     } catch (error: any) {
-//       console.error('SIWE login failed:', error);
-//       alert(`Login failed: ${error.message}`);
-//       disconnectWallet();
+//       console.error('❌ SIWE authentication error:', error);
+      
+//       if (error.code === 4001) {
+//         toast.error('Signature Rejected', {
+//           description: 'You rejected the signature request'
+//         });
+//       } else if (error.name === 'SyntaxError') {
+//         toast.error('Backend Error', {
+//           description: 'Invalid response from server. Please check backend logs.'
+//         });
+//       } else {
+//         toast.error('Authentication Failed', {
+//           description: error.message || 'Failed to authenticate'
+//         });
+//       }
+      
+//       // Don't disconnect wallet on auth failure, just reset auth state
+//       setIsAuthenticated(false);
+//       setToken(null);
+//       setUser(null);
+//       localStorage.removeItem('token');
+//       localStorage.removeItem('authToken');
+//       localStorage.removeItem('user');
 //     } finally {
 //       setIsAuthenticating(false);
 //     }
-//   };
+//   }, [signer, account, chainId]);
 
+//   // Logout
 //   const logout = useCallback(async () => {
 //     try {
 //       if (token) {
-//         await fetch('http://localhost:5000/api/auth/logout', {
+//         console.log('🔓 Logging out from backend...');
+//         await fetch(`${API_BASE_URL}/api/auth/logout`, {
 //           method: 'POST',
-//           headers: { 'Authorization': `Bearer ${token}` }
+//           headers: { 
+//             'Authorization': `Bearer ${token}`,
+//             'Content-Type': 'application/json'
+//           },
+//           credentials: 'include'
 //         });
+//         console.log('✅ Logged out from backend');
 //       }
 //     } catch (error) {
-//       console.error('Logout error:', error);
+//       console.error('❌ Logout error:', error);
 //     } finally {
 //       disconnectWallet();
 //     }
@@ -217,26 +328,39 @@
 //     if (!window.ethereum) return;
 
 //     const handleAccountsChanged = (accounts: string[]) => {
+//       console.log('🔄 Account changed:', accounts);
 //       if (accounts.length === 0) {
-//         logout(); // If user disconnects wallet, log them out
+//         console.log('   User disconnected wallet');
+//         logout();
 //       } else {
-//         // If user switches account, reconnect to update all state
+//         // Account changed, need to re-authenticate
+//         console.log('   Switching to account:', accounts[0]);
+//         setIsAuthenticated(false);
+//         localStorage.removeItem('token');
+//         localStorage.removeItem('authToken');
+//         toast.warning('Account Changed', {
+//           description: 'Please sign in again with your new account'
+//         });
 //         connectWallet();
 //       }
 //     };
 
-//     const handleChainChanged = () => {
-//       // The simplest way to handle network changes is to reload the app
-//       window.location.reload();
+//     const handleChainChanged = (newChainId: string) => {
+//       console.log('🔄 Chain changed to:', newChainId);
+//       toast.info('Network Changed', {
+//         description: 'Page will reload to update network...'
+//       });
+//       // Reload the page to reset state
+//       setTimeout(() => window.location.reload(), 1000);
 //     };
 
-//     window.ethereum.on('accountsChanged', handleAccountsChanged);
-//     window.ethereum.on('chainChanged', handleChainChanged);
+//     window.ethereum.on?.('accountsChanged', handleAccountsChanged);
+//     window.ethereum.on?.('chainChanged', handleChainChanged);
 
 //     // Cleanup listeners on component unmount
 //     return () => {
-//       window.ethereum?.removeListener('accountsChanged', handleAccountsChanged);
-//       window.ethereum?.removeListener('chainChanged', handleChainChanged);
+//       window.ethereum?.removeListener?.('accountsChanged', handleAccountsChanged);
+//       window.ethereum?.removeListener?.('chainChanged', handleChainChanged);
 //     };
 //   }, [connectWallet, logout]);
 
@@ -246,6 +370,7 @@
 //     signer,
 //     account,
 //     chainId,
+//     balance,
 //     isConnected,
 //     isConnecting,
 //     user,
@@ -354,6 +479,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('walletConnected');  // ← ADD THIS
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
@@ -391,6 +517,9 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
         setBalance(ethers.formatEther(userBalance));
         setIsConnected(true);
 
+        // ← SAVE WALLET CONNECTION STATE
+        localStorage.setItem('walletConnected', 'true');
+
         console.log('✅ Wallet connected:', userAccount);
         console.log('   Network:', network.name, `(Chain ID: ${network.chainId})`);
         console.log('   Balance:', ethers.formatEther(userBalance), 'ETH');
@@ -406,7 +535,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       console.error('❌ Failed to connect wallet:', error);
       disconnectWallet();
       
-      if (error.code !== 4001) { // 4001 is user rejection code
+      if (error.code !== 4001) {
         toast.error('Connection Failed', {
           description: error.message || 'Failed to connect wallet. Please try again.'
         });
@@ -416,30 +545,69 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
     }
   }, [disconnectWallet]);
 
-  // Effect to restore session from local storage on initial load
+  // ← RESTORE WALLET CONNECTION ON PAGE LOAD
   useEffect(() => {
-    const savedToken = localStorage.getItem('token') || localStorage.getItem('authToken');
-    const savedUser = localStorage.getItem('user');
-    
-    if (savedToken && savedUser) {
-      try {
-        const userData = JSON.parse(savedUser);
-        setToken(savedToken);
-        setUser(userData);
-        setIsAuthenticated(true);
-        console.log('✅ Session restored from localStorage');
-        console.log('   User:', userData.address);
-        console.log('   Role:', userData.role);
-      } catch (error) {
-        console.error('❌ Failed to restore session:', error);
-        // Clear invalid data
-        localStorage.removeItem('token');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+    const restoreSession = async () => {
+      const walletWasConnected = localStorage.getItem('walletConnected');
+      const savedToken = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const savedUser = localStorage.getItem('user');
+      
+      // Restore auth session
+      if (savedToken && savedUser) {
+        try {
+          const userData = JSON.parse(savedUser);
+          setToken(savedToken);
+          setUser(userData);
+          setIsAuthenticated(true);
+          console.log('✅ Session restored from localStorage');
+          console.log('   User:', userData.address);
+          console.log('   Role:', userData.role);
+        } catch (error) {
+          console.error('❌ Failed to restore session:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+        }
       }
-    }
+
+      // ← RESTORE WALLET CONNECTION
+      if (walletWasConnected === 'true' && window.ethereum) {
+        try {
+          console.log('🔄 Restoring wallet connection...');
+          
+          const web3Provider = new ethers.BrowserProvider(window.ethereum);
+          
+          // Check if already connected
+          const accounts = await web3Provider.send('eth_accounts', []);
+          
+          if (accounts.length > 0) {
+            const web3Signer = await web3Provider.getSigner();
+            const userAccount = await web3Signer.getAddress();
+            const network = await web3Provider.getNetwork();
+            const userBalance = await web3Provider.getBalance(userAccount);
+
+            setProvider(web3Provider);
+            setSigner(web3Signer);
+            setAccount(getAddress(userAccount));
+            setChainId(network.chainId);
+            setBalance(ethers.formatEther(userBalance));
+            setIsConnected(true);
+
+            console.log('✅ Wallet reconnected automatically:', userAccount);
+          } else {
+            // Wallet not connected anymore, clear flag
+            localStorage.removeItem('walletConnected');
+          }
+        } catch (error) {
+          console.error('❌ Failed to restore wallet:', error);
+          localStorage.removeItem('walletConnected');
+        }
+      }
+    };
+
+    restoreSession();
   }, []); // Run only once on mount
-  
+
   // Sign in with Ethereum (SIWE)
   const signInWithEthereum = useCallback(async () => {
     if (!signer || !account || !chainId) {
@@ -519,7 +687,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
         const authToken = responseData.token;
         const userData = responseData.user;
 
-        // Store in localStorage (both keys for compatibility)
+        // Store in localStorage
         localStorage.setItem('token', authToken);
         localStorage.setItem('authToken', authToken);
         localStorage.setItem('user', JSON.stringify(userData));
@@ -606,6 +774,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
         setIsAuthenticated(false);
         localStorage.removeItem('token');
         localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
         toast.warning('Account Changed', {
           description: 'Please sign in again with your new account'
         });
@@ -618,14 +787,12 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       toast.info('Network Changed', {
         description: 'Page will reload to update network...'
       });
-      // Reload the page to reset state
       setTimeout(() => window.location.reload(), 1000);
     };
 
     window.ethereum.on?.('accountsChanged', handleAccountsChanged);
     window.ethereum.on?.('chainChanged', handleChainChanged);
 
-    // Cleanup listeners on component unmount
     return () => {
       window.ethereum?.removeListener?.('accountsChanged', handleAccountsChanged);
       window.ethereum?.removeListener?.('chainChanged', handleChainChanged);

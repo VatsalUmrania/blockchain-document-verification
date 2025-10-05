@@ -5,13 +5,13 @@ import {
   CheckCircle, 
   Clock,
   Upload,
-  Shield,
   AlertTriangle,
   Eye,
   XCircle,
   Share,
   FileCheck,
-  Copy
+  Copy,
+  User
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,12 +23,16 @@ import { toast } from 'sonner';
 interface Activity {
   id?: string;
   type: 'upload' | 'verification' | 'issue' | 'share' | 'download' | 'delete';
-  status: 'verified' | 'pending' | 'completed' | 'failed' | 'error' | 'processing';
-  message: string;
+  status: 'verified' | 'pending' | 'completed' | 'failed' | 'error' | 'processing' | 'active';
+  message?: string;
   timestamp: number;
   hash?: string;
   documentName?: string;
   user?: string;
+  title?: string;
+  recipientName?: string;
+  issuanceDate?: string | Date;
+  documentType?: string;
 }
 
 interface ActivityFeedProps {
@@ -188,6 +192,11 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
         className: 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700',
         icon: Clock,
         shadow: 'shadow-blue-200 dark:shadow-blue-900'
+      },
+      active: {
+        className: 'bg-slate-600 text-white border-slate-700 hover:bg-slate-700',
+        icon: FileText,
+        shadow: 'shadow-slate-200 dark:shadow-slate-900'
       }
     };
 
@@ -198,16 +207,30 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     };
   };
 
-  // Format time ago
-  const formatTimeAgo = (timestamp: number): string => {
+  // Format time ago with better precision
+  const formatTimeAgo = (timestamp: number | string | Date): string => {
     const now = new Date();
     const activityTime = new Date(timestamp);
-    const diffInMinutes = Math.floor((now.getTime() - activityTime.getTime()) / (1000 * 60));
+    const diffInSeconds = Math.floor((now.getTime() - activityTime.getTime()) / 1000);
 
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    if (diffInSeconds < 10) return 'just now';
+    if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+    
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 1) return 'just now';
+    if (diffInMinutes === 1) return '1 minute ago';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours === 1) return '1 hour ago';
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return 'yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`;
+    
     return activityTime.toLocaleDateString();
   };
 
@@ -306,34 +329,64 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
                   transition={{ delay: index * 0.05, duration: 0.3 }}
                   className="group"
                 >
-                  <Card className="transition-all duration-300 hover:shadow-md hover:border-primary/50">
+                  <Card className="transition-all duration-300 hover:shadow-md hover:border-primary/50 bg-card">
                     <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-start space-x-3">
                         {/* Activity Icon */}
-                        <div className={`p-2 rounded-full ${iconConfig.bgColor} ${iconConfig.textColor} border ${iconConfig.borderColor} group-hover:scale-110 transition-transform duration-300`}>
+                        <div className={`p-2.5 rounded-lg ${iconConfig.bgColor} ${iconConfig.textColor} border ${iconConfig.borderColor} group-hover:scale-110 transition-transform duration-300 flex-shrink-0 mt-0.5`}>
                           <Icon className="w-5 h-5" />
                         </div>
                         
                         {/* Activity Content */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium mb-1 group-hover:text-primary transition-colors">
-                            {activity.message}
-                          </p>
-                          <div className="flex items-center space-x-3">
-                            <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                              <Clock className="w-3 h-3" />
-                              <span>{formatTimeAgo(activity.timestamp)}</span>
+                        <div className="flex-1 min-w-0 space-y-2">
+                          {/* Document Title - Most Prominent */}
+                          {activity.title && (
+                            <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                              {activity.title}
+                            </h3>
+                          )}
+                          
+                          {/* Recipient Name */}
+                          {activity.recipientName && (
+                            <div className="flex items-center space-x-1.5 text-sm text-muted-foreground">
+                              <User className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="font-medium">Recipient:</span>
+                              <span className="truncate">{activity.recipientName}</span>
                             </div>
+                          )}
+                          
+                          {/* Metadata Row */}
+                          <div className="flex items-center flex-wrap gap-2">
+                            {/* Time */}
+                            <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3 flex-shrink-0" />
+                              <span className="whitespace-nowrap">
+                                {activity.issuanceDate 
+                                  ? formatTimeAgo(activity.issuanceDate)
+                                  : formatTimeAgo(activity.timestamp)
+                                }
+                              </span>
+                            </div>
+                            
+                            {/* Document Type */}
+                            {activity.documentType && (
+                              <Badge variant="outline" className="text-xs">
+                                {activity.documentType}
+                              </Badge>
+                            )}
+                            
+                            {/* Document Hash */}
                             {activity.hash && (
                               <motion.button 
                                 whileHover={{ scale: 1.05 }}
-                                className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded border hover:text-primary hover:border-primary transition-colors cursor-pointer flex items-center space-x-1"
-                                title="Click to copy hash"
+                                whileTap={{ scale: 0.95 }}
+                                className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-0.5 rounded border hover:text-primary hover:border-primary transition-colors cursor-pointer flex items-center space-x-1"
+                                title="Click to copy document hash"
                                 onClick={() => handleHashCopy(activity.hash!)}
                               >
                                 <Copy className="w-3 h-3" />
                                 <span>
-                                  {activity.hash.length > 8 
+                                  {activity.hash.length > 10 
                                     ? `${activity.hash.substring(0, 6)}...${activity.hash.substring(activity.hash.length - 4)}`
                                     : activity.hash
                                   }
@@ -344,12 +397,16 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
                         </div>
                         
                         {/* Status Badge */}
-                        <Badge 
-                          className={`flex items-center space-x-1 transition-all duration-300 ${statusConfig.className} ${statusConfig.shadow}`}
-                        >
-                          <StatusIcon className="w-3 h-3" />
-                          <span>{activity.status.charAt(0).toUpperCase() + activity.status.slice(1)}</span>
-                        </Badge>
+                        <div className="flex-shrink-0">
+                          <Badge 
+                            className={`flex items-center space-x-1 transition-all duration-300 ${statusConfig.className}`}
+                          >
+                            <StatusIcon className="w-3 h-3" />
+                            <span className="text-xs capitalize">
+                              {activity.status}
+                            </span>
+                          </Badge>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
