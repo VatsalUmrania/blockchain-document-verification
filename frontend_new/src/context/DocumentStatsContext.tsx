@@ -1,381 +1,219 @@
-import React, { 
-    createContext, 
-    useContext, 
-    useState, 
-    useEffect, 
-    useCallback, 
-    useRef,
-    ReactNode 
-  } from 'react';
-  import { DocumentService } from '../services/DocumentService.types';
-  import { useWeb3 } from './Web3Context';
-  import { toast } from 'sonner';
-  import { 
-    DocumentStats, 
-    ActivityItem, 
-    DetailedStats, 
-    ConnectionStatus 
-  } from '../types/document.types';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useWeb3 } from './Web3Context';
+
+// Types
+export interface DashboardStats {
+  totalDocuments: number;
+  verifiedDocuments: number;
+  pendingDocuments: number;
+  totalVerifications: number;
+}
+
+export interface ActivityItem {
+  id: string;
+  type: 'issued' | 'verified' | 'revoked';
+  documentHash: string;
+  documentType: string;
+  recipientName: string;
+  timestamp: Date;
+  transactionHash?: string;
+  status: 'active' | 'verified' | 'revoked' | 'expired';
+}
+
+export interface DocumentStatsContextType {
+  stats: DashboardStats;
+  recentActivity: ActivityItem[];
+  isLoading: boolean;
+  error: string | null;
+  connectionStatus: 'connected' | 'disconnected' | 'error';
+  lastUpdate: number;
+  refreshStats: () => Promise<void>;
+  clearError: () => void;
+}
+
+// Create Context
+const DocumentStatsContext = createContext<DocumentStatsContextType | undefined>(undefined);
+
+// Provider Props
+interface DocumentStatsProviderProps {
+  children: ReactNode;
+}
+
+// Backend API URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+export const DocumentStatsProvider: React.FC<DocumentStatsProviderProps> = ({ children }) => {
+  const { isConnected, account } = useWeb3();
   
-  // Context Types
-  interface DocumentStatsContextType {
-    stats: DocumentStats;
-    recentActivity: ActivityItem[];
-    isLoading: boolean;
-    refreshStats: () => void;
-    lastUpdate: number;
-    connectionStatus: ConnectionStatus;
-    error: string | null;
-    recoverFromError: () => void;
-    getDetailedStats: () => DetailedStats;
-    clearError: () => void;
-  }
+  const [stats, setStats] = useState<DashboardStats>({
+    totalDocuments: 0,
+    verifiedDocuments: 0,
+    pendingDocuments: 0,
+    totalVerifications: 0
+  });
   
-  interface DocumentStatsProviderProps {
-    children: ReactNode;
-  }
-  
-  // Custom Event Interface
-  interface DocumentStatsChangeEvent extends CustomEvent {
-    detail?: {
-      type?: string;
-      data?: unknown;
-    };
-  }
-  
-  // Create Context
-  const DocumentStatsContext = createContext<DocumentStatsContextType | null>(null);
-  
-  // Custom Hook
-  export const useDocumentStats = (): DocumentStatsContextType => {
-    const context = useContext(DocumentStatsContext);
-    if (!context) {
-      throw new Error('useDocumentStats must be used within a DocumentStatsProvider');
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected');
+  const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
+
+  // Get JWT token from localStorage
+  const getAuthToken = (): string | null => {
+    return localStorage.getItem('token');
+  };
+
+  // Fetch dashboard stats from backend
+  const fetchStats = useCallback(async (): Promise<void> => {
+    if (!isConnected || !account) {
+      console.log('⚠️  Wallet not connected, skipping stats fetch');
+      return;
     }
-    return context;
-  };
-  
-  // Provider Component
-  export const DocumentStatsProvider: React.FC<DocumentStatsProviderProps> = ({ children }) => {
-    const { isConnected, provider, signer } = useWeb3();
-    
-    // State
-    const [stats, setStats] = useState<DocumentStats>({
-      totalDocuments: 0,
-      verifiedDocuments: 0,
-      pendingDocuments: 0,
-      totalVerifications: 0
-    });
-    const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
-    const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
-    const [error, setError] = useState<string | null>(null);
-    
-    // Refs to prevent infinite loops and manage state
-    const refreshInProgress = useRef<boolean>(false);
-    const lastRefreshTime = useRef<number>(0);
-    const retryCount = useRef<number>(0);
-    const maxRetries = 3;
-    const mountedRef = useRef<boolean>(true);
-  
-    // Refresh stats with comprehensive error handling
-    const refreshStats = useCallback(async (force: boolean = false): Promise<void> => {
-      // Prevent multiple simultaneous refreshes
-      if (refreshInProgress.current || !mountedRef.current) {
-        return;
-      }
+
+    const token = getAuthToken();
+    if (!token) {
+      console.log('⚠️  No auth token found, skipping stats fetch');
+      setError('Please log in to view dashboard statistics');
+      setConnectionStatus('error');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log('📊 Fetching dashboard stats from backend...');
       
-      // Rate limiting - don't refresh more than once per second
-      const now = Date.now();
-      if (!force && (now - lastRefreshTime.current) < 1000) {
-        return;
-      }
-      
-      refreshInProgress.current = true;
-      lastRefreshTime.current = now;
-      
-      if (mountedRef.current) {
-        setIsLoading(true);
-        setConnectionStatus('connecting');
-        setError(null);
-      }
-      
-      try {
-        const documentService = new DocumentService(provider || null, signer || null);
-        
-        // Check if localStorage is available
-        if (!documentService.isStorageAvailable()) {
-          throw new Error('localStorage is not available');
+      const response = await fetch(`${API_BASE_URL}/api/dashboard/analytics`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-  
-        const updatedStats = documentService.getDocumentStats();
-        const updatedActivity = documentService.getRecentActivity(10);
-        
-        // Validate stats before updating
-        if (typeof updatedStats !== 'object' || updatedStats === null) {
-          throw new Error('Invalid stats data received');
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please log in again.');
         }
-  
-        if (mountedRef.current) {
-          // Only update if stats actually changed
-          setStats(prevStats => {
-            const hasChanged = JSON.stringify(prevStats) !== JSON.stringify(updatedStats);
-            if (hasChanged) {
-              return { ...updatedStats };
-            }
-            return prevStats;
-          });
+        throw new Error(`Failed to fetch stats: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      console.log('✅ Stats received:', data);
+
+      if (data.success && data.data) {
+        // Update stats
+        setStats({
+          totalDocuments: data.data.stats?.totalDocuments || 0,
+          verifiedDocuments: data.data.stats?.verified || 0,
+          pendingDocuments: data.data.stats?.pending || 0,
+          totalVerifications: data.data.stats?.verifications || 0
+        });
+
+        // Update recent activity
+        if (data.data.recentDocuments) {
+          const activities: ActivityItem[] = data.data.recentDocuments.map((doc: any, index: number) => ({
+            id: doc.hash || `activity-${index}`,
+            type: doc.status === 'revoked' ? 'revoked' : 'issued',
+            documentHash: doc.hash || '',
+            documentType: doc.type || 'Unknown',
+            recipientName: doc.recipient || 'Unknown',
+            timestamp: new Date(doc.issuanceDate || Date.now()),
+            transactionHash: doc.transactionHash,
+            status: doc.status || 'active'
+          }));
           
-          setRecentActivity([...updatedActivity]);
-          setLastUpdate(now);
-          setConnectionStatus('connected');
+          setRecentActivity(activities);
         }
-        
-        retryCount.current = 0; // Reset retry count on success
-        
-      } catch (error) {
-        console.error('❌ Error refreshing document stats:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to refresh document statistics';
-        
-        if (mountedRef.current) {
-          setError(errorMessage);
-          setConnectionStatus('error');
-        }
-        
-        // Implement retry logic for transient errors
-        if (retryCount.current < maxRetries && mountedRef.current) {
-          retryCount.current++;
-          setTimeout(() => {
-            if (mountedRef.current) {
-              refreshStats(true);
-            }
-          }, Math.pow(2, retryCount.current) * 1000); // Exponential backoff
-        } else if (retryCount.current >= maxRetries) {
-          toast.error('Statistics Update Failed', {
-            description: 'Unable to refresh document statistics. Please try again later.',
-          });
-        }
-      } finally {
-        if (mountedRef.current) {
-          setIsLoading(false);
-        }
-        refreshInProgress.current = false;
+
+        setConnectionStatus('connected');
+        setLastUpdate(Date.now());
+      } else {
+        throw new Error('Invalid response format from backend');
       }
-    }, [provider, signer]);
-  
-    // Enhanced error recovery
-    const recoverFromError = useCallback((): void => {
-      if (mountedRef.current) {
-        setError(null);
-        setConnectionStatus('disconnected');
-        retryCount.current = 0;
-        refreshStats(true);
-        
-        toast.info('Recovering Statistics', {
-          description: 'Attempting to recover document statistics...',
-        });
-      }
-    }, [refreshStats]);
-  
-    // Component mount/unmount tracking
-    useEffect(() => {
-      mountedRef.current = true;
-      return () => {
-        mountedRef.current = false;
-      };
-    }, []);
-  
-    // Initial load only
-    useEffect(() => {
-      const initializeStats = async (): Promise<void> => {
-        try {
-          if (mountedRef.current) {
-            await refreshStats(true);
-          }
-        } catch (error) {
-          console.error('❌ Error initializing document stats:', error);
-          if (mountedRef.current) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to initialize document statistics';
-            setError(errorMessage);
-            setConnectionStatus('error');
-          }
-        }
-      };
-  
-      initializeStats();
-    }, [refreshStats]);
-  
-    // Wallet connection changes
-    useEffect(() => {
-      if (isConnected && mountedRef.current) {
-        const timer = setTimeout(() => {
-          if (mountedRef.current) {
-            refreshStats(true);
-          }
-        }, 100);
-        
-        return () => clearTimeout(timer);
-      }
-    }, [isConnected, refreshStats]);
-  
-    // Listen for document changes with error handling
-    useEffect(() => {
-      const handleDocumentStatsChange = (event: Event): void => {
-        try {
-          const customEvent = event as DocumentStatsChangeEvent;
-          if (customEvent?.detail && mountedRef.current) {
-            const timer = setTimeout(() => {
-              if (mountedRef.current) {
-                refreshStats(true);
-              }
-            }, 200);
-            
-            // Cleanup function
-            setTimeout(() => clearTimeout(timer), 300);
-          }
-        } catch (error) {
-          console.error('❌ Error handling document stats change event:', error);
-        }
-      };
-  
-      const handleStorageChange = (event: StorageEvent): void => {
-        try {
-          if (event.storageArea === localStorage && mountedRef.current) {
-            refreshStats(true);
-          }
-        } catch (error) {
-          console.error('❌ Error handling storage change event:', error);
-        }
-      };
-  
-      // Listen for custom events
-      window.addEventListener('documentStatsChanged', handleDocumentStatsChange);
-      window.addEventListener('storage', handleStorageChange);
+    } catch (error: any) {
+      console.error('❌ Error fetching stats:', error);
+      setError(error.message || 'Failed to fetch dashboard data');
+      setConnectionStatus('error');
       
-      return () => {
-        window.removeEventListener('documentStatsChanged', handleDocumentStatsChange);
-        window.removeEventListener('storage', handleStorageChange);
-      };
-    }, [refreshStats]);
-  
-    // Auto-refresh every 30 seconds when connected
-    useEffect(() => {
-      if (isConnected && connectionStatus === 'connected' && mountedRef.current) {
-        const interval = setInterval(() => {
-          try {
-            if (mountedRef.current) {
-              refreshStats();
-            }
-          } catch (error) {
-            console.error('❌ Error during auto-refresh:', error);
-          }
-        }, 30000);
-  
-        return () => clearInterval(interval);
-      }
-    }, [isConnected, connectionStatus, refreshStats]);
-  
-    // Handle visibility changes to refresh when tab becomes active
-    useEffect(() => {
-      const handleVisibilityChange = (): void => {
-        try {
-          if (!document.hidden && isConnected && mountedRef.current) {
-            refreshStats();
-          }
-        } catch (error) {
-          console.error('❌ Error handling visibility change:', error);
-        }
-      };
-  
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      
-      return () => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      };
-    }, [isConnected, refreshStats]);
-  
-    // Manual refresh with error handling
-    const manualRefresh = useCallback((): void => {
-      try {
-        refreshStats(true);
-        toast.info('Refreshing Statistics', {
-          description: 'Updating document statistics...',
-        });
-      } catch (error) {
-        console.error('❌ Error during manual refresh:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to refresh statistics';
-        setError(errorMessage);
-        toast.error('Refresh Failed', {
-          description: errorMessage,
-        });
-      }
-    }, [refreshStats]);
-  
-    // Get detailed statistics
-    const getDetailedStats = useCallback((): DetailedStats => {
-      try {
-        const documentService = new DocumentService(provider || null, signer || null);
-        const storageInfo = documentService.getStorageInfo();
-        
-        return {
-          ...stats,
-          ...storageInfo,
-          lastUpdate,
-          connectionStatus,
-          error,
-          isLoading
-        };
-      } catch (error) {
-        console.error('❌ Error getting detailed stats:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to get detailed statistics';
-        
-        return {
-          ...stats,
-          available: false,
-          used: 0,
-          total: 0,
-          lastUpdate,
-          connectionStatus: 'error',
-          error: errorMessage,
-          isLoading
-        };
-      }
-    }, [stats, lastUpdate, connectionStatus, error, isLoading, provider, signer]);
-  
-    // Clear error state
-    const clearError = useCallback((): void => {
-      if (mountedRef.current) {
-        setError(null);
-        if (connectionStatus === 'error') {
-          setConnectionStatus('disconnected');
-        }
-        toast.success('Error Cleared', {
-          description: 'Error state has been cleared successfully.',
-        });
-      }
-    }, [connectionStatus]);
-  
-    // Context value
-    const contextValue: DocumentStatsContextType = {
-      stats,
-      recentActivity,
-      isLoading,
-      refreshStats: manualRefresh,
-      lastUpdate,
-      connectionStatus,
-      error,
-      recoverFromError,
-      getDetailedStats,
-      clearError
-    };
-  
-    return (
-      <DocumentStatsContext.Provider value={contextValue}>
-        {children}
-      </DocumentStatsContext.Provider>
-    );
+      // Set default values on error
+      setStats({
+        totalDocuments: 0,
+        verifiedDocuments: 0,
+        pendingDocuments: 0,
+        totalVerifications: 0
+      });
+      setRecentActivity([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isConnected, account]);
+
+  // Refresh stats (exposed function)
+  const refreshStats = useCallback(async (): Promise<void> => {
+    await fetchStats();
+  }, [fetchStats]);
+
+  // Clear error
+  const clearError = useCallback((): void => {
+    setError(null);
+  }, []);
+
+  // Initial fetch when wallet connects
+  useEffect(() => {
+    if (isConnected && account) {
+      console.log('🔌 Wallet connected, fetching initial stats...');
+      fetchStats();
+    } else {
+      console.log('🔌 Wallet disconnected, resetting stats...');
+      setStats({
+        totalDocuments: 0,
+        verifiedDocuments: 0,
+        pendingDocuments: 0,
+        totalVerifications: 0
+      });
+      setRecentActivity([]);
+      setConnectionStatus('disconnected');
+    }
+  }, [isConnected, account, fetchStats]);
+
+  // Periodic refresh (every 30 seconds)
+  useEffect(() => {
+    if (isConnected && account) {
+      const interval = setInterval(() => {
+        console.log('🔄 Auto-refresh: Fetching stats...');
+        fetchStats();
+      }, 300000); // 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [isConnected, account, fetchStats]);
+
+  const value: DocumentStatsContextType = {
+    stats,
+    recentActivity,
+    isLoading,
+    error,
+    connectionStatus,
+    lastUpdate,
+    refreshStats,
+    clearError
   };
-  
-  export default DocumentStatsProvider;
-  
+
+  return (
+    <DocumentStatsContext.Provider value={value}>
+      {children}
+    </DocumentStatsContext.Provider>
+  );
+};
+
+// Hook to use the context
+export const useDocumentStats = (): DocumentStatsContextType => {
+  const context = useContext(DocumentStatsContext);
+  if (!context) {
+    throw new Error('useDocumentStats must be used within DocumentStatsProvider');
+  }
+  return context;
+};

@@ -1,10 +1,26 @@
-import * as dotenv from 'dotenv';
-dotenv.config();
+require('dotenv').config();
+
+const requiredEnv = (varName: string): string => {
+  const value = process.env[varName];
+  if (!value) {
+    throw new Error(`❌ Missing required environment variable: ${varName}`);
+  }
+  return value;
+};
+
+const optionalEnv = (varName: string, defaultValue: string = ''): string => {
+  return process.env[varName] || defaultValue;
+};
 
 export const config = {
-  port: process.env.PORT || 5000,
-  mongoUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/blockchain-document-verification',
-  jwtSecret: process.env.JWT_SECRET || 'fallback-secret',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173'
+  port: parseInt(process.env.PORT || '5000', 10),
+  nodeEnv: optionalEnv('NODE_ENV', 'development'),
+  mongoUri: requiredEnv('MONGO_URI'),
+  jwtSecret: requiredEnv('JWT_SECRET'),
+  jwtExpiresIn: optionalEnv('JWT_EXPIRES_IN', '7d') as string, // Explicitly typed as string
+  sessionSecret: optionalEnv('SESSION_SECRET', requiredEnv('JWT_SECRET')),
+  contractAddress: requiredEnv('CONTRACT_ADDRESS'),
+  rpcUrl: requiredEnv('RPC_URL'),
+  privateKey: optionalEnv('PRIVATE_KEY', ''),
+  frontendUrl: optionalEnv('FRONTEND_URL', 'http://localhost:5173'),
 };

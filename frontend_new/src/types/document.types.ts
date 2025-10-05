@@ -9,6 +9,7 @@ export enum DOCUMENT_STATUS {
 export enum DOCUMENT_TYPE {
   CERTIFICATE = 'certificate',
   DIPLOMA = 'diploma',
+  DEGREE = 'degree',
   LICENSE = 'license',
   TRANSCRIPT = 'transcript',
   ID_CARD = 'id_card',
@@ -17,13 +18,30 @@ export enum DOCUMENT_TYPE {
 
 // Base interfaces
 export interface DocumentMetadataInput {
+  // Required fields
   documentType: string;
-  title?: string;
   recipientName: string;
-  recipientId?: string;
+  
+  // Institution fields
   issuerName?: string;
+  issuerRegistrationNumber?: string;
+  issuerContact?: string;
+  issuerAddress?: string;
+  issuerType?: string;
+  
+  // Document fields
+  title?: string;
+  recipientId?: string;
   issuanceDate?: Date | string;
   expirationDate?: Date | string;
+  graduationDate?: Date | string;
+  
+  // Academic fields
+  program?: string;
+  major?: string;
+  gpa?: string;
+  
+  // Additional fields
   description?: string;
   category?: string;
   tags?: string[];
@@ -66,39 +84,142 @@ export interface VerificationResultInput {
 
 // Classes
 export class DocumentMetadata {
+  // Required fields
   public documentType: string;
-  public title?: string;
   public recipientName: string;
-  public recipientId?: string;
+  
+  // Institution fields
   public issuerName?: string;
+  public issuerRegistrationNumber?: string;
+  public issuerContact?: string;
+  public issuerAddress?: string;
+  public issuerType?: string;
+  
+  // Document fields
+  public title?: string;
+  public recipientId?: string;
   public issuanceDate?: Date;
   public expirationDate?: Date;
+  public graduationDate?: Date;
+  
+  // Academic fields
+  public program?: string;
+  public major?: string;
+  public gpa?: string;
+  
+  // Additional fields
   public description?: string;
   public category?: string;
   public tags?: string[];
 
   constructor(input: DocumentMetadataInput) {
+    // Required fields
     this.documentType = input.documentType;
-    this.title = input.title;
     this.recipientName = input.recipientName;
-    this.recipientId = input.recipientId;
+    
+    // Institution fields
     this.issuerName = input.issuerName;
+    this.issuerRegistrationNumber = input.issuerRegistrationNumber;
+    this.issuerContact = input.issuerContact;
+    this.issuerAddress = input.issuerAddress;
+    this.issuerType = input.issuerType;
+    
+    // Document fields
+    this.title = input.title;
+    this.recipientId = input.recipientId;
     this.issuanceDate = input.issuanceDate ? new Date(input.issuanceDate) : undefined;
     this.expirationDate = input.expirationDate ? new Date(input.expirationDate) : undefined;
+    this.graduationDate = input.graduationDate ? new Date(input.graduationDate) : undefined;
+    
+    // Academic fields
+    this.program = input.program;
+    this.major = input.major;
+    this.gpa = input.gpa;
+    
+    // Additional fields
     this.description = input.description;
     this.category = input.category;
     this.tags = input.tags || [];
   }
 
+  /**
+   * Validate required fields for document issuance
+   */
+  validate(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!this.documentType) {
+      errors.push('Document type is required');
+    }
+
+    if (!this.title) {
+      errors.push('Document title is required');
+    }
+
+    if (!this.recipientName) {
+      errors.push('Recipient name is required');
+    }
+
+    if (!this.issuerName) {
+      errors.push('Issuer name is required');
+    }
+
+    if (!this.issuanceDate) {
+      errors.push('Issuance date is required');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Validate institution registration fields
+   */
+  validateInstitution(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!this.issuerName || this.issuerName.trim() === '') {
+      errors.push('Institution name is required');
+    }
+
+    if (!this.issuerRegistrationNumber || this.issuerRegistrationNumber.trim() === '') {
+      errors.push('Registration number is required');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
   toJSON(): Record<string, any> {
     return {
+      // Required fields
       documentType: this.documentType,
-      title: this.title,
       recipientName: this.recipientName,
-      recipientId: this.recipientId,
+      
+      // Institution fields
       issuerName: this.issuerName,
+      issuerRegistrationNumber: this.issuerRegistrationNumber,
+      issuerContact: this.issuerContact,
+      issuerAddress: this.issuerAddress,
+      issuerType: this.issuerType,
+      
+      // Document fields
+      title: this.title,
+      recipientId: this.recipientId,
       issuanceDate: this.issuanceDate?.toISOString(),
       expirationDate: this.expirationDate?.toISOString(),
+      graduationDate: this.graduationDate?.toISOString(),
+      
+      // Academic fields
+      program: this.program,
+      major: this.major,
+      gpa: this.gpa,
+      
+      // Additional fields
       description: this.description,
       category: this.category,
       tags: this.tags,
@@ -107,13 +228,30 @@ export class DocumentMetadata {
 
   static fromJSON(data: Record<string, any>): DocumentMetadata {
     return new DocumentMetadata({
+      // Required fields
       documentType: data.documentType,
-      title: data.title,
       recipientName: data.recipientName,
-      recipientId: data.recipientId,
+      
+      // Institution fields
       issuerName: data.issuerName,
+      issuerRegistrationNumber: data.issuerRegistrationNumber,
+      issuerContact: data.issuerContact,
+      issuerAddress: data.issuerAddress,
+      issuerType: data.issuerType,
+      
+      // Document fields
+      title: data.title,
+      recipientId: data.recipientId,
       issuanceDate: data.issuanceDate ? new Date(data.issuanceDate) : undefined,
       expirationDate: data.expirationDate ? new Date(data.expirationDate) : undefined,
+      graduationDate: data.graduationDate ? new Date(data.graduationDate) : undefined,
+      
+      // Academic fields
+      program: data.program,
+      major: data.major,
+      gpa: data.gpa,
+      
+      // Additional fields
       description: data.description,
       category: data.category,
       tags: data.tags || [],
@@ -273,6 +411,33 @@ export class VerificationResult {
       blockNumber: this.blockNumber,
     };
   }
+}
+
+// Additional interfaces for compatibility
+export interface Document {
+  id: number;
+  hash: string;
+  metadata: DocumentMetadata;
+  timestamp: Date;
+  issuer: string;
+}
+
+export interface IssuanceResult {
+  success: boolean;
+  documentHash: string;
+  transactionHash?: string;
+  blockNumber?: number;
+  gasUsed?: string; // Changed to string to match blockchain service
+  error?: string;
+  metadata?: any;
+}
+
+export interface ContractResult {
+  success: boolean;
+  transactionHash: string;
+  blockNumber: number;
+  gasUsed: string;
+  documentHash?: string;
 }
 
 // Export types for use in other files
