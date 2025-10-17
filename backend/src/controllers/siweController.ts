@@ -1,264 +1,425 @@
+// import { Request, Response } from 'express';
+// import { SiweMessage, generateNonce } from 'siwe';
+// import User, { UserRole } from '../models/User';
+// import { generateToken } from '../utils/jwt';
+// import { blockchainService } from '../services/blockchainService';
+
+// /**
+//  * @desc Generates a unique nonce for the SIWE message.
+//  * @route GET /api/auth/nonce
+//  * @access Public
+//  */
+// export const getNonce = (req: Request, res: Response) => {
+//   req.session.nonce = generateNonce();
+//   // Ensure the session is saved before sending the response
+//   req.session.save(() => {
+//     res.setHeader('Content-Type', 'text/plain');
+//     res.status(200).send(req.session.nonce);
+//   });
+// };
+
+// /**
+//  * @desc Verifies a signed SIWE message, creates or updates a user, and returns a JWT.
+//  * @route POST /api/auth/login
+//  * @access Public
+//  */
+// export const login = async (req: Request, res: Response) => {
+//   try {
+//     const { message, signature } = req.body;
+//     if (!message || !signature) {
+//       return res.status(400).json({ error: 'Message and signature are required.' });
+//     }
+
+//     // Reconstruct the SiweMessage from the object sent by the frontend
+//     const siweMessage = new SiweMessage(message);
+
+//     // Verify the message signature and nonce
+//     const fields = await siweMessage.verify({
+//       signature: signature,
+//       nonce: req.session.nonce,
+//     });
+
+//     const userAddress = fields.data.address;
+//     let user = await User.findOne({ address: userAddress.toLowerCase() });
+
+//     // Check the blockchain for the user's role
+//     const isInstitute = await blockchainService.isInstitutionVerified(userAddress);
+//     const userRole = isInstitute ? UserRole.INSTITUTE : UserRole.INDIVIDUAL;
+
+//     if (!user) {
+//       // If user is new, create them with the determined role
+//       user = new User({
+//         address: userAddress,
+//         role: userRole,
+//       });
+//     } else {
+//       // If user exists, update their role and last login time
+//       user.role = userRole;
+//       user.lastLoginAt = new Date();
+//     }
+    
+//     await user.save();
+    
+//     // Generate a JWT containing the user's ID, address, and role
+//     const token = generateToken({ id: user.id, address: user.address, role: user.role });
+
+//     // Destroy the session nonce after successful login
+//     return req.session.destroy((err) => {
+//       if (err) {
+//         console.error('Session destruction error:', err);
+//         return res.status(500).json({ error: 'Failed to clear session.' });
+//       }
+//       // Send the token and user data to the frontend
+//       return res.status(200).json({ token, user: user.toObject() });
+//     });
+
+//   } catch (error: any) {
+//     console.error('❌ Login error:', error);
+//     res.status(500).json({ 
+//         error: 'Login verification failed.', 
+//         details: error.message 
+//     });
+//   }
+// };
+
+// /**
+//  * @desc Gets the profile of the currently authenticated user.
+//  * @route GET /api/auth/me
+//  * @access Private
+//  */
+// export const getMe = async (req: Request, res: Response) => {
+//   try {
+//     // req.user is attached by the authMiddleware
+//     const user = await User.findById(req.user.id).select('-__v'); 
+//     if (!user) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+//     res.status(200).json(user.toObject());
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to fetch user profile' });
+//   }
+// };
+
+// /**
+//  * @desc Logs the user out by destroying the session.
+//  * @route POST /api/auth/logout
+//  * @access Public
+//  */
+// export const logout = (req: Request, res: Response) => {
+//   req.session.destroy((err) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Could not log out.' });
+//     }
+//     res.status(200).json({ message: 'Logged out successfully' });
+//   });
+// };
+
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { User } from '../models/User';
-import { Session } from '../models/Session';
+import { SiweMessage, generateNonce } from 'siwe';
+import User, { UserRole } from '../models/User';
 import { generateToken } from '../utils/jwt';
+import { blockchainService } from '../services/blockchainService';
 
-// Add ethers import with fallback
-let ethers: any;
-try {
-  ethers = require('ethers');
-} catch (error) {
-  console.error('Failed to import ethers:', error);
-}
-
-// Custom SIWE message parser for backend
-interface ParsedSiweMessage {
-  domain: string;
-  address: string;
-  statement: string;
-  uri: string;
-  version: string;
-  chainId: number;
-  nonce: string;
-  issuedAt: string;
-}
-
-const parseSiweMessage = (messageString: string): ParsedSiweMessage | null => {
+/**
+ * @desc Generates a unique nonce for the SIWE message.
+ * @route GET /api/auth/nonce
+ * @access Public
+ */
+export const getNonce = (req: Request, res: Response) => {
   try {
-    const lines = messageString.split('\n').map(line => line.trim());
+    const nonce = generateNonce();
+    req.session.nonce = nonce;
     
-    // Parse header
-    const headerMatch = lines[0].match(/^(.+) wants you to sign in with your Ethereum account:$/);
-    if (!headerMatch) {
-      console.error('Header parsing failed:', lines[0]);
-      return null;
-    }
+    console.log('📝 Nonce generated:', nonce);
     
-    const domain = headerMatch[1];
-    const address = lines[1];
-    
-    // Find statement (optional)
-    let statement = '';
-    let bodyStartIndex = 2;
-    
-    // Skip empty line after address
-    while (bodyStartIndex < lines.length && lines[bodyStartIndex] === '') {
-      bodyStartIndex++;
-    }
-    
-    // Check if next line is statement (not starting with known prefixes)
-    if (bodyStartIndex < lines.length && 
-        !lines[bodyStartIndex].startsWith('URI:') &&
-        !lines[bodyStartIndex].startsWith('Version:') &&
-        lines[bodyStartIndex] !== '') {
-      statement = lines[bodyStartIndex];
-      bodyStartIndex++;
-    }
-    
-    // Skip another empty line
-    while (bodyStartIndex < lines.length && lines[bodyStartIndex] === '') {
-      bodyStartIndex++;
-    }
-    
-    // Parse body
-    const bodyLines = lines.slice(bodyStartIndex);
-    const params: any = { domain, address, statement };
-    
-    bodyLines.forEach(line => {
-      if (line.startsWith('URI: ')) params.uri = line.substring(5);
-      else if (line.startsWith('Version: ')) params.version = line.substring(9);
-      else if (line.startsWith('Chain ID: ')) params.chainId = parseInt(line.substring(10));
-      else if (line.startsWith('Nonce: ')) params.nonce = line.substring(7);
-      else if (line.startsWith('Issued At: ')) params.issuedAt = line.substring(11);
-    });
-    
-    // Validate required fields
-    if (!params.domain || !params.address || !params.uri || !params.version || 
-        !params.chainId || !params.nonce || !params.issuedAt) {
-      console.error('Missing required fields:', params);
-      return null;
-    }
-    
-    return params as ParsedSiweMessage;
-  } catch (error) {
-    console.error('Error parsing SIWE message:', error);
-    return null;
-  }
-};
-
-const verifySiweSignature = (message: string, signature: string, expectedAddress: string): boolean => {
-  try {
-    if (!ethers) {
-      console.error('Ethers not available for signature verification');
-      return false;
-    }
-    
-    const recoveredAddress = ethers.verifyMessage(message, signature);
-    const isValid = recoveredAddress.toLowerCase() === expectedAddress.toLowerCase();
-    
-    console.log('Signature verification:', {
-      expected: expectedAddress.toLowerCase(),
-      recovered: recoveredAddress.toLowerCase(),
-      isValid
-    });
-    
-    return isValid;
-  } catch (error) {
-    console.error('Signature verification failed:', error);
-    return false;
-  }
-};
-
-export const generateNonce = async (req: Request, res: Response) => {
-  try {
-    const nonce = uuidv4();
-    
-    console.log('📤 Generated nonce:', nonce);
-    
-    // Store nonce in session with 10 minutes expiry
-    await Session.create({
-      userId: 'temp',
-      nonce,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000)
-    });
-
-    res.json({ nonce });
-  } catch (error) {
-    console.error('❌ Nonce generation error:', error);
-    res.status(500).json({ error: 'Failed to generate nonce' });
-  }
-};
-
-export const siweLogin = async (req: Request, res: Response) => {
-  try {
-    console.log('📥 SIWE login request received');
-    console.log('Request body keys:', Object.keys(req.body));
-    
-    const { message, signature, address } = req.body;
-
-    if (!message || !signature || !address) {
-      console.error('Missing fields:', { 
-        hasMessage: !!message, 
-        hasSignature: !!signature, 
-        hasAddress: !!address 
-      });
-      return res.status(400).json({ 
-        error: 'Missing required fields: message, signature, address' 
-      });
-    }
-
-    // Normalize address to checksum format
-    let checksumAddress: string;
-    try {
-      if (!ethers) {
-        throw new Error('Ethers library not available');
+    // Ensure the session is saved before sending the response
+    req.session.save((err) => {
+      if (err) {
+        console.error('❌ Session save error:', err);
+        return res.status(500).json({ 
+          success: false,
+          error: 'Failed to save session' 
+        });
       }
-      checksumAddress = ethers.getAddress(address.toLowerCase());
-      console.log('✅ Address normalized:', checksumAddress);
-    } catch (error) {
-      console.error('Address normalization failed:', error);
-      return res.status(400).json({ error: 'Invalid Ethereum address format' });
+      
+      // Return JSON response
+      res.json({ 
+        success: true,
+        nonce: req.session.nonce 
+      });
+    });
+  } catch (error) {
+    console.error('❌ Error generating nonce:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to generate nonce' 
+    });
+  }
+};
+
+/**
+ * @desc Verifies a signed SIWE message, creates or updates a user, and returns a JWT.
+ * @route POST /api/auth/verify
+ * @access Public
+ */
+export const verify = async (req: Request, res: Response) => {
+  try {
+    console.log('🔐 === SIWE VERIFICATION START ===');
+    console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+    
+    const { message, signature } = req.body;
+    
+    if (!message || !signature) {
+      console.error('❌ Missing message or signature');
+      return res.status(400).json({ 
+        success: false,
+        error: 'Message and signature are required.' 
+      });
+    }
+
+    // Get nonce from session
+    const nonce = req.session.nonce;
+    console.log('🔑 Session nonce:', nonce);
+    console.log('🔑 Session ID:', req.sessionID);
+    
+    if (!nonce) {
+      console.error('❌ No nonce found in session');
+      return res.status(400).json({ 
+        success: false,
+        error: 'No nonce found in session. Please request a new nonce.' 
+      });
     }
 
     console.log('📝 Parsing SIWE message...');
-    console.log('Message length:', message.length);
-    console.log('Message preview:', message.substring(0, 200));
-    
-    // Parse SIWE message using custom parser
-    const parsedMessage = parseSiweMessage(message);
-    if (!parsedMessage) {
-      console.error('❌ Message parsing failed');
-      return res.status(400).json({ 
-        error: 'Invalid SIWE message format' 
+    console.log('   Message type:', typeof message);
+    console.log('   Message preview:', message.substring ? message.substring(0, 100) : 'Not a string');
+
+    // Parse the SIWE message
+    let siweMessage: SiweMessage;
+    try {
+      if (typeof message === 'string') {
+        siweMessage = new SiweMessage(message);
+      } else {
+        siweMessage = new SiweMessage(message);
+      }
+      console.log('✅ SIWE message parsed successfully');
+    } catch (parseError: any) {
+      console.error('❌ Failed to parse SIWE message:', parseError);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid SIWE message format',
+        details: parseError.message
       });
     }
 
-    console.log('✅ Message parsed successfully:', {
-      domain: parsedMessage.domain,
-      address: parsedMessage.address,
-      nonce: parsedMessage.nonce,
-      chainId: parsedMessage.chainId
-    });
+    console.log('🔐 Verifying signature...');
+    console.log('   Address:', siweMessage.address);
+    console.log('   Domain:', siweMessage.domain);
+    console.log('   Nonce from message:', siweMessage.nonce);
+    console.log('   Nonce from session:', nonce);
 
-    // Verify the signature
-    const isValidSignature = verifySiweSignature(message, signature, checksumAddress);
-    if (!isValidSignature) {
-      console.error('❌ Signature verification failed');
-      return res.status(400).json({ error: 'Invalid signature' });
-    }
-
-    console.log('✅ Signature verified successfully');
-
-    // Check if nonce exists and is not used
-    const session = await Session.findOne({ 
-      nonce: parsedMessage.nonce, 
-      isUsed: false 
-    });
-
-    if (!session) {
-      console.error('❌ Nonce not found:', parsedMessage.nonce);
-      return res.status(400).json({ error: 'Invalid nonce' });
-    }
-
-    if (session.expiresAt < new Date()) {
-      console.error('❌ Nonce expired:', { 
-        expiresAt: session.expiresAt, 
-        now: new Date() 
+    // Verify the message signature and nonce
+    let fields;
+    try {
+      fields = await siweMessage.verify({
+        signature: signature,
+        nonce: nonce,
       });
-      return res.status(400).json({ error: 'Expired nonce' });
+      console.log('✅ Signature verification result:', fields.success);
+    } catch (verifyError: any) {
+      console.error('❌ Signature verification failed:', verifyError);
+      return res.status(401).json({
+        success: false,
+        error: 'Signature verification failed',
+        details: verifyError.message
+      });
     }
 
-    // Mark nonce as used
-    session.isUsed = true;
-    await session.save();
-    console.log('✅ Nonce validated and marked as used');
+    if (!fields.success) {
+      console.error('❌ Signature verification returned false');
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid signature' 
+      });
+    }
 
-    // Find or create user with checksummed address
-    let user = await User.findOne({ address: checksumAddress.toLowerCase() });
+    console.log('✅ Signature verified for address:', fields.data.address);
+
+    const userAddress = fields.data.address.toLowerCase();
+    console.log('👤 Normalized address:', userAddress);
     
+    // Check the blockchain for the user's role
+    console.log('🔗 Checking blockchain for institution verification...');
+    let isInstitute = false;
+    try {
+      isInstitute = await blockchainService.isInstitutionVerified(userAddress);
+      console.log('✅ Blockchain check complete. Is institution:', isInstitute);
+    } catch (blockchainError: any) {
+      console.error('⚠️  Blockchain check failed, defaulting to Individual:', blockchainError.message);
+    }
+    
+    const userRole = isInstitute ? UserRole.INSTITUTE : UserRole.INDIVIDUAL;
+    console.log('📊 User role determined:', userRole);
+
+    // Find or create user
+    console.log('💾 Looking up user in database...');
+    let user = await User.findOne({ address: userAddress });
+
     if (!user) {
-      user = await User.create({
-        address: checksumAddress.toLowerCase(),
-        nonce: uuidv4(),
-        lastLoginAt: new Date()
-      });
-      console.log('✅ New user created:', user._id);
+      console.log('📝 Creating new user...');
+      try {
+        user = new User({
+          address: userAddress,
+          role: userRole,
+          ensName: fields.data.address,
+          lastLoginAt: new Date(),
+        });
+        await user.save();
+        console.log('✅ New user created:', user._id);
+      } catch (dbError: any) {
+        console.error('❌ Failed to create user:', dbError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to create user',
+          details: dbError.message
+        });
+      }
     } else {
-      user.lastLoginAt = new Date();
-      user.nonce = uuidv4();
-      await user.save();
-      console.log('✅ Existing user updated:', user._id);
+      console.log('📝 Updating existing user:', user._id);
+      try {
+        user.role = userRole;
+        user.lastLoginAt = new Date();
+        await user.save();
+        console.log('✅ User updated');
+      } catch (dbError: any) {
+        console.error('❌ Failed to update user:', dbError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to update user',
+          details: dbError.message
+        });
+      }
+    }
+    
+    console.log('🎟️  Generating JWT token...');
+    console.log('   User ID:', user._id.toString());
+    console.log('   Address:', user.address);
+    console.log('   Role:', user.role);
+
+    // Generate JWT token
+    let token;
+    try {
+      token = generateToken(
+        user._id.toString(),
+        user.address,
+        user.role
+      );
+      console.log('✅ JWT token generated successfully');
+    } catch (tokenError: any) {
+      console.error('❌ Failed to generate token:', tokenError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to generate authentication token',
+        details: tokenError.message
+      });
     }
 
-    // Generate JWT
-    const token = generateToken(user._id.toString(), checksumAddress);
+    // Clear the used nonce from session
+    console.log('🧹 Clearing used nonce from session...');
+    delete req.session.nonce;
 
-    console.log('🎉 SIWE login successful for:', checksumAddress);
+    console.log('✅ === SIWE VERIFICATION COMPLETE ===');
 
-    res.json({
+    // Send success response
+    return res.status(200).json({ 
       success: true,
-      token,
+      token, 
       user: {
-        id: user._id,
-        address: checksumAddress,
+        id: user._id.toString(),
+        address: user.address,
+        role: user.role,
         ensName: user.ensName,
         lastLoginAt: user.lastLoginAt
       }
     });
 
-  } catch (error) {
-    console.error('❌ SIWE login error:', error);
+  } catch (error: any) {
+    console.error('❌ === SIWE VERIFICATION ERROR ===');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
-    res.status(500).json({ error: 'Authentication failed', details: error.message });
+    
+    res.status(500).json({ 
+      success: false,
+      error: 'Login verification failed.', 
+      details: error.message 
+    });
   }
 };
 
-export const logout = async (req: Request, res: Response) => {
+/**
+ * @desc Gets the profile of the currently authenticated user.
+ * @route GET /api/auth/me
+ * @access Private
+ */
+export const getMe = async (req: Request, res: Response) => {
   try {
-    res.json({ success: true, message: 'Logged out successfully' });
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Not authenticated' 
+      });
+    }
+
+    const user = await User.findById(req.user.id).select('-__v'); 
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'User not found' 
+      });
+    }
+    
+    res.status(200).json({ 
+      success: true,
+      user: user.toObject() 
+    });
   } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ error: 'Logout failed' });
+    console.error('❌ Error fetching user profile:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch user profile' 
+    });
   }
+};
+
+/**
+ * @desc Logs the user out by destroying the session.
+ * @route POST /api/auth/logout
+ * @access Public
+ */
+export const logout = (req: Request, res: Response) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('❌ Logout error:', err);
+      return res.status(500).json({ 
+        success: false,
+        error: 'Could not log out.' 
+      });
+    }
+    
+    console.log('✅ User logged out successfully');
+    res.status(200).json({ 
+      success: true,
+      message: 'Logged out successfully' 
+    });
+  });
+};
+
+// Export all functions
+export default {
+  getNonce,
+  verify,
+  getMe,
+  logout
 };

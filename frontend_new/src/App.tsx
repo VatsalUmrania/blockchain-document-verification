@@ -418,7 +418,7 @@ const App: React.FC = () => {
 
               {/* Toast Notifications */}
               <Toaster
-                position="bottom-right"
+                position="top-right"
                 expand={false}
                 richColors
                 closeButton

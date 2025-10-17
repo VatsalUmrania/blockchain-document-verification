@@ -1,16 +1,17 @@
 // scripts/deploy.js
-const { ethers } = require("hardhat");
+const hre = require("hardhat");
 
 async function main() {
   console.log("🚀 Starting deployment of DocumentVerification contract...");
 
-  // Get the contract factory
-  const DocumentVerification = await ethers.getContractFactory(
-    "DocumentVerification"
-  );
+  // Get the deployer account
+  const [deployer] = await hre.ethers.getSigners();
+  console.log("📝 Deploying contracts with account:", deployer.address);
+  console.log("💰 Account balance:", (await deployer.provider.getBalance(deployer.address)).toString());
 
   // Deploy the contract
-  console.log("📦 Deploying contract...");
+  console.log("\n📄 Deploying DocumentVerification contract...");
+  const DocumentVerification = await hre.ethers.getContractFactory("DocumentVerification");
   const documentVerification = await DocumentVerification.deploy();
 
   // Wait for deployment to complete
@@ -28,7 +29,6 @@ async function main() {
   console.log("🌐 Network:", network.name, "(Chain ID:", network.chainId + ")");
 
   // Get deployer information
-  const [deployer] = await ethers.getSigners();
   console.log("👤 Deployed by:", deployer.address);
 
   const balance = await ethers.provider.getBalance(deployer.address);
@@ -36,7 +36,7 @@ async function main() {
 
   // Save deployment information
   const contractAddress = await documentVerification.getAddress();
-  const deploymentTx = documentVerification.deploymentTransaction();
+    const deploymentTx = documentVerification.deploymentTransaction();
 
   const deploymentInfo = {
     contractAddress: contractAddress,
@@ -84,23 +84,37 @@ async function main() {
     }
   }
 
-  console.log("\n🎉 Deployment completed successfully!");
-  console.log("\n📋 Next steps:");
-  console.log(
-    "1. Update your frontend configuration with the contract address"
-  );
-  console.log(
-    "2. Register institutions using the registerInstitution function"
-  );
-  console.log(
-    "3. Verify institutions using the verifyInstitution function (owner only)"
-  );
-  console.log("4. Start issuing documents!");
+  console.log("✅ DocumentVerification deployed to:", contractAddress);
 
-  return {
-    contractAddress: contractAddress,
-    contract: documentVerification,
-  };
+  // ⚠️ SKIP auto-registration - Let users register from frontend
+  console.log("\n⚠️  Institution registration skipped");
+  console.log("📝 Please register your institution from the frontend:");
+  console.log("   1. Go to Document Issuance Workflow");
+  console.log("   2. Fill in institution details (name, registration number, contact)");
+  console.log("   3. Click 'Register Institution'");
+  console.log("   4. Switch to owner account and verify the institution");
+
+  console.log("\n📋 Contract Details:");
+  console.log("   • Contract Address:", contractAddress);
+  console.log("   • Owner Address:", deployer.address);
+  console.log("   • Network:", (await hre.ethers.provider.getNetwork()).name);
+
+  console.log("\n🎉 Deployment completed successfully!");
+  console.log("\n💡 Add this to your .env files:");
+  console.log(`\nBackend (.env):`);
+  console.log(`CONTRACT_ADDRESS=${contractAddress}`);
+  console.log(`RPC_URL=http://127.0.0.1:8545`);
+  console.log(`\nFrontend (.env):`);
+  console.log(`VITE_CONTRACT_ADDRESS=${contractAddress}`);
+  console.log(`VITE_RPC_URL=http://127.0.0.1:8545`);
+
+  console.log("\n📖 Next Steps:");
+  console.log("1. Update .env files with contract address");
+  console.log("2. Restart backend: cd backend && npm run dev");
+  console.log("3. Restart frontend: cd frontend_new && npm run dev");
+  console.log("4. Register institution from the frontend workflow");
+  console.log("5. Verify institution using owner account");
+  console.log("6. Issue documents with your custom institution name!");
 }
 
 // Handle errors

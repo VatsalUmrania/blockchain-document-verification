@@ -14,6 +14,7 @@ contract DocumentVerification {
         address issuer;              // Address of the issuing institution
         string issuerName;           // Name of the issuing institution
         string documentType;         // Type of document (degree, certificate, etc.)
+        string title;                // Document title
         string recipientName;        // Name of the document recipient
         string recipientId;          // ID of the recipient (student ID, etc.)
         uint256 issuanceDate;        // Timestamp when document was issued
@@ -48,6 +49,7 @@ contract DocumentVerification {
         address indexed issuer,
         string recipientName,
         string documentType,
+        string title,
         uint256 issuanceDate
     );
     
@@ -66,6 +68,11 @@ contract DocumentVerification {
     event InstitutionVerified(
         address indexed institutionAddress,
         bool verified
+    );
+
+    event InstitutionUpdated(
+        address indexed institutionAddress,
+        string name
     );
     
     // Contract owner
@@ -117,6 +124,27 @@ contract DocumentVerification {
         
         emit InstitutionRegistered(msg.sender, _name, block.timestamp);
     }
+
+    /**
+     * @dev Update institution information
+     * @param _name New institution name
+     * @param _registrationNumber New registration number
+     * @param _contactInfo New contact info
+     */
+    function updateInstitution(
+        string memory _name,
+        string memory _registrationNumber,
+        string memory _contactInfo
+    ) external {
+        require(institutions[msg.sender].registrationDate > 0, "Institution not registered");
+        require(bytes(_name).length > 0, "Institution name cannot be empty");
+        
+        institutions[msg.sender].name = _name;
+        institutions[msg.sender].registrationNumber = _registrationNumber;
+        institutions[msg.sender].contactInfo = _contactInfo;
+        
+        emit InstitutionUpdated(msg.sender, _name);
+    }
     
     /**
      * @dev Verify an institution (only owner)
@@ -144,6 +172,7 @@ contract DocumentVerification {
     function issueDocument(
         bytes32 _documentHash,
         string memory _documentType,
+        string memory _title,
         string memory _recipientName,
         string memory _recipientId,
         uint256 _expirationDate,
@@ -155,11 +184,13 @@ contract DocumentVerification {
         require(bytes(_documentType).length > 0, "Document type cannot be empty");
         require(bytes(_recipientName).length > 0, "Recipient name cannot be empty");
         
+        // Use institution name from registry
         documents[_documentHash] = Document({
             documentHash: _documentHash,
             issuer: msg.sender,
             issuerName: institutions[msg.sender].name,
             documentType: _documentType,
+            title: _title,
             recipientName: _recipientName,
             recipientId: _recipientId,
             issuanceDate: block.timestamp,
@@ -176,6 +207,7 @@ contract DocumentVerification {
             msg.sender,
             _recipientName,
             _documentType,
+            _title,
             block.timestamp
         );
     }
@@ -186,6 +218,7 @@ contract DocumentVerification {
      * @return issuer Address of the document issuer
      * @return issuerName Name of the issuing institution
      * @return documentType Type of the document
+     * @return title Title of the document
      * @return recipientName Name of the document recipient
      * @return recipientId ID of the document recipient
      * @return issuanceDate Timestamp when document was issued
@@ -201,6 +234,7 @@ contract DocumentVerification {
             address issuer,
             string memory issuerName,
             string memory documentType,
+            string memory title,
             string memory recipientName,
             string memory recipientId,
             uint256 issuanceDate,
@@ -212,14 +246,15 @@ contract DocumentVerification {
         Document memory doc = documents[_documentHash];
 
         bool documentIsValid = !revokedDocuments[_documentHash] &&
-                              doc.isActive &&
-                              (doc.expirationDate == 0 || doc.expirationDate > block.timestamp) &&
-                              institutions[doc.issuer].isVerified;
+                                doc.isActive &&
+                                (doc.expirationDate == 0 || doc.expirationDate > block.timestamp) &&
+                                institutions[doc.issuer].isVerified;
 
         return (
             doc.issuer,
             doc.issuerName,
             doc.documentType,
+            doc.title,
             doc.recipientName,
             doc.recipientId,
             doc.issuanceDate,
