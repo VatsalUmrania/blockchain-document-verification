@@ -1579,7 +1579,6 @@ const DocumentIssuanceWorkflow: React.FC = () => {
             </Alert>
           </motion.div>
         )}
-
         {/* Progress Steps */}
         <Card className="mb-8">
           <CardContent className="p-6">

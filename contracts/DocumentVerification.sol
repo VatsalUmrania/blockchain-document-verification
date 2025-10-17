@@ -100,6 +100,9 @@ contract DocumentVerification {
     
     /**
      * @dev Register an institution
+     * @param _name Institution name
+     * @param _registrationNumber Official registration number
+     * @param _contactInfo Contact information
      */
     function registerInstitution(
         string memory _name,
@@ -145,6 +148,7 @@ contract DocumentVerification {
     
     /**
      * @dev Verify an institution (only owner)
+     * @param _institutionAddress Address of the institution to verify
      */
     function verifyInstitution(address _institutionAddress) external onlyOwner {
         require(institutions[_institutionAddress].registrationDate > 0, "Institution not registered");
@@ -156,7 +160,14 @@ contract DocumentVerification {
     }
     
     /**
-     * @dev Issue a new document with custom issuer name override
+     * @dev Issue a new document
+     * @param _documentHash Hash of the document content
+     * @param _documentType Type of document
+     * @param _recipientName Name of the recipient
+     * @param _recipientId ID of the recipient
+     * @param _expirationDate Expiration date (0 if no expiration)
+     * @param _metadataURI IPFS URI for additional metadata
+     * @param _issuerSignature Digital signature from issuer
      */
     function issueDocument(
         bytes32 _documentHash,
@@ -203,6 +214,17 @@ contract DocumentVerification {
     
     /**
      * @dev Verify a document by its hash
+     * @param _documentHash Hash of the document to verify
+     * @return issuer Address of the document issuer
+     * @return issuerName Name of the issuing institution
+     * @return documentType Type of the document
+     * @return title Title of the document
+     * @return recipientName Name of the document recipient
+     * @return recipientId ID of the document recipient
+     * @return issuanceDate Timestamp when document was issued
+     * @return expirationDate Timestamp when document expires
+     * @return isValidDoc Whether the document is currently valid
+     * @return isActive Whether the document is still active
      */
     function verifyDocument(bytes32 _documentHash)
         external
@@ -224,9 +246,9 @@ contract DocumentVerification {
         Document memory doc = documents[_documentHash];
 
         bool documentIsValid = !revokedDocuments[_documentHash] &&
-                              doc.isActive &&
-                              (doc.expirationDate == 0 || doc.expirationDate > block.timestamp) &&
-                              institutions[doc.issuer].isVerified;
+                                doc.isActive &&
+                                (doc.expirationDate == 0 || doc.expirationDate > block.timestamp) &&
+                                institutions[doc.issuer].isVerified;
 
         return (
             doc.issuer,
@@ -244,6 +266,7 @@ contract DocumentVerification {
     
     /**
      * @dev Revoke a document
+     * @param _documentHash Hash of the document to revoke
      */
     function revokeDocument(bytes32 _documentHash) 
         external 
@@ -261,6 +284,8 @@ contract DocumentVerification {
     
     /**
      * @dev Get document metadata URI
+     * @param _documentHash Hash of the document
+     * @return IPFS URI for additional metadata
      */
     function getDocumentMetadata(bytes32 _documentHash) 
         external 
@@ -273,6 +298,8 @@ contract DocumentVerification {
     
     /**
      * @dev Get issuer signature for a document
+     * @param _documentHash Hash of the document
+     * @return Digital signature from issuer
      */
     function getIssuerSignature(bytes32 _documentHash) 
         external 
@@ -285,6 +312,7 @@ contract DocumentVerification {
     
     /**
      * @dev Get total number of documents
+     * @return Total count of issued documents
      */
     function getTotalDocuments() external view returns (uint256) {
         return documentHashes.length;
@@ -292,6 +320,7 @@ contract DocumentVerification {
     
     /**
      * @dev Get total number of institutions
+     * @return Total count of registered institutions
      */
     function getTotalInstitutions() external view returns (uint256) {
         return institutionAddresses.length;
@@ -299,6 +328,8 @@ contract DocumentVerification {
     
     /**
      * @dev Check if an institution is verified
+     * @param _institutionAddress Address of the institution
+     * @return Whether the institution is verified
      */
     function isInstitutionVerified(address _institutionAddress) external view returns (bool) {
         return institutions[_institutionAddress].isVerified;

@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import { Web3Provider } from './context/Web3Context';
 import { DocumentStatsProvider } from './context/DocumentStatsContext';
+import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/layout/Navbar';
 import Dashboard from './components/dashboard/Dashboard';
 import UploadPage from './components/document/DocumentUpload';
@@ -13,6 +14,9 @@ import ThirdPartyVerification from './components/verification/ThirdPartyVerifica
 import DocumentIssuanceWorkflow from './components/issuance/DocumentIssuanceWorkflow';
 import QRCodeScanner from './components/qr/QRCodeScanner';
 import UserTypeSelection from './components/common/UserTypeSelection';
+import LoginPage from './components/auth/LoginPage';
+import RegisterPage from './components/auth/RegisterPage';
+import ProfilePage from './components/auth/ProfilePage';
 
 function App() {
   const [theme, setTheme] = useState('dark');
@@ -22,7 +26,7 @@ function App() {
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const shouldUseDark = savedTheme ? savedTheme === 'dark' : prefersDark;
-    
+
     setTheme(shouldUseDark ? 'dark' : 'light');
     applyTheme(shouldUseDark);
   }, []);
@@ -51,56 +55,61 @@ function App() {
   }, []);
 
   return (
-    <Web3Provider>
-      <DocumentStatsProvider>
-        <Router>
-          <div 
-            className="min-h-screen transition-colors duration-300"
-            style={{
-              background: `linear-gradient(135deg, 
-                rgb(var(--bg-primary)), 
-                rgb(var(--surface-primary)), 
-                rgb(var(--surface-secondary))
-              )`
-            }}
-          >
-            {/* Navigation */}
-            <Navbar />
+    <AuthProvider>
+      <Web3Provider>
+        <DocumentStatsProvider>
+          <Router>
+            <div
+              className="min-h-screen transition-colors duration-300"
+              style={{
+                background: `linear-gradient(135deg, 
+                  rgb(var(--bg-primary)), 
+                  rgb(var(--surface-primary)), 
+                  rgb(var(--surface-secondary))
+                )`
+              }}
+            >
+              {/* Navigation */}
+              <Navbar />
 
-            {/* Main Content Area */}
-            <main className="pt-20 min-h-screen">
-              <Routes>
-                <Route path="/" element={<UserTypeSelection />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/upload" element={<UploadPage />} />
-                <Route path="/verify" element={<VerificationPortal />} />
-                <Route path="/third-party-verify" element={<ThirdPartyVerification />} />
-                <Route path="/issue-document" element={<DocumentIssuanceWorkflow />} />
-                <Route path="/qr-scanner" element={<QRCodeScanner />} />
-              </Routes>
-            </main>
+              {/* Main Content Area */}
+              <main className="pt-20 min-h-screen">
+                <Routes>
+                  <Route path="/" element={<UserTypeSelection />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/upload" element={<UploadPage />} />
+                  <Route path="/verify" element={<VerificationPortal />} />
+                  <Route path="/third-party-verify" element={<ThirdPartyVerification />} />
+                  <Route path="/issue-document" element={<DocumentIssuanceWorkflow />} />
+                  <Route path="/qr-scanner" element={<QRCodeScanner />} />
+                </Routes>
+              </main>
 
-            {/* Toast Notifications */}
-            <ToastContainer
-              position="bottom-right"
-              autoClose={4000}
-              hideProgressBar={false}
-              newestOnTop={true}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme={theme}
-              className="toast-container"
-              toastClassName="!bg-[rgb(var(--surface-primary))] !border-2 !border-[rgb(var(--color-primary))] !text-[rgb(var(--text-primary))] !rounded-xl !shadow-lg"
-              bodyClassName="text-sm font-medium"
-              progressClassName="!bg-gradient-to-r !from-[rgb(var(--color-primary))] !to-[rgb(var(--color-success))]"
-            />
-          </div>
-        </Router>
-      </DocumentStatsProvider>
-    </Web3Provider>
+              {/* Toast Notifications */}
+              <ToastContainer
+                position="bottom-right"
+                autoClose={4000}
+                hideProgressBar={false}
+                newestOnTop={true}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme={theme}
+                className="toast-container"
+                toastClassName="!bg-[rgb(var(--surface-primary))] !border-2 !border-[rgb(var(--color-primary))] !text-[rgb(var(--text-primary))] !rounded-xl !shadow-lg"
+                bodyClassName="text-sm font-medium"
+                progressClassName="!bg-gradient-to-r !from-[rgb(var(--color-primary))] !to-[rgb(var(--color-success))]"
+              />
+            </div>
+          </Router>
+        </DocumentStatsProvider>
+      </Web3Provider>
+    </AuthProvider>
   );
 }
 
