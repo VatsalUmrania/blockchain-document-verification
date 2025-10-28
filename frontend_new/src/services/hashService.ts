@@ -213,7 +213,7 @@ export const createDocumentServiceHash = (fileContent: string, fileName: string,
 /**
  * Validate hash format
  */
-export const validateHashFormat = (hash: string): { isValid: boolean; length: number; normalized: string; hadPrefix: boolean | undefined } => {
+export const validateHashFormat = (hash: string): { isValid: boolean; length: number; normalized: string; hadPrefix: boolean } => {
   const normalized = normalizeHash(hash);
   return {
     isValid: /^[a-f0-9]{64}$/i.test(normalized),

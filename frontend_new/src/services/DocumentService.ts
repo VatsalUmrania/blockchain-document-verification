@@ -31,8 +31,12 @@ interface DocumentStore {
 }
 
 class DocumentService {
-  constructor() {
-    // Constructor is empty as we don't need to store provider/signer for local storage operations
+  private provider: any
+  private signer: any
+
+  constructor(provider?: any, signer?: any) {
+    this.provider = provider;
+    this.signer = signer;  
   }
 
   createDocumentHash(fileContent: string, fileName: string, metadata: Record<string, any> = {}): string {

@@ -747,7 +747,7 @@ const DocumentUpload: React.FC = () => {
                                       >
                                         <QRCodeGenerator 
                                           hash={fileObj.hash} 
-                                          metadata={fileObj.metadata}
+                                          metadata={fileObj.metadata || undefined}
                                         />
                                       </motion.div>
                                     )}
