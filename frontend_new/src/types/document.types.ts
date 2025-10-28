@@ -53,6 +53,7 @@ export interface BlockchainDocumentInput {
   issuer: string;
   issuerName: string;
   documentType: string;
+  title: string;
   recipientName: string;
   recipientId?: string;
   issuanceDate: Date;
@@ -264,6 +265,7 @@ export class BlockchainDocument {
   public issuer: string;
   public issuerName: string;
   public documentType: string;
+  public title: string;
   public recipientName: string;
   public recipientId?: string;
   public issuanceDate: Date;
@@ -278,6 +280,7 @@ export class BlockchainDocument {
     this.issuer = input.issuer;
     this.issuerName = input.issuerName;
     this.documentType = input.documentType;
+    this.title = input.title;
     this.recipientName = input.recipientName;
     this.recipientId = input.recipientId;
     this.issuanceDate = new Date(input.issuanceDate);
@@ -445,3 +448,30 @@ export type DocumentMetadataType = DocumentMetadata;
 export type BlockchainDocumentType = BlockchainDocument;
 export type InstitutionType = Institution;
 export type VerificationResultType = VerificationResult;
+
+// Add the missing interfaces for DocumentService.types.ts
+export interface DocumentStats {
+  totalDocuments: number;
+  verifiedDocuments: number;
+  pendingDocuments: number;
+  totalVerifications: number;
+}
+
+export interface ActivityItem {
+  id: string;
+  type: 'verification' | 'upload';
+  message: string;
+  timestamp: number;
+  hash: string;
+  status: string;
+  localOnly: boolean;
+  blockchainStored: boolean;
+}
+
+export interface StorageInfo {
+  available: boolean;
+  used: number;
+  total?: number;
+  documentCount?: number;
+  approximateTotal?: number;
+}

@@ -5,19 +5,16 @@ import {
   Bug, 
   FileText,
   ClipboardCheck,
-  Flask,
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Copy,
-  Upload
+  Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { generateDocumentHash, verifyDocumentHash } from '../../services/hashService';
@@ -235,7 +232,7 @@ const HashDebugger: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <div className="p-2 bg-primary/10 rounded-lg">
-                <Flask className="w-5 h-5 text-primary" />
+                <Bug className="w-5 h-5 text-primary" />
               </div>
               <span>Debug Configuration</span>
             </CardTitle>
@@ -274,7 +271,7 @@ const HashDebugger: React.FC = () => {
             >
               {isDebugging ? (
                 <>
-                  <Flask className="w-5 h-5 mr-2 animate-pulse" />
+                  <Bug className="w-5 h-5 mr-2 animate-pulse" />
                   Analyzing...
                 </>
               ) : (

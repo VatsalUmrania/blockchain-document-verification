@@ -1,28 +1,56 @@
-// services/DocumentService.js
+// services/DocumentService.ts
 import { normalizeHash, createDocumentServiceHash } from './hashService';
 
+// Define types for our document structures
+interface StoredDocument {
+  hash: string;
+  fileName: string;
+  timestamp: number;
+  metadata: Record<string, any>;
+  transactionHash?: string;
+  status: string;
+  blockchainStored?: boolean;
+  localOnly?: boolean;
+  retryable?: boolean;
+  verifiedAt?: number;
+  lastUpdated?: number;
+  verificationData?: Record<string, any>;
+  originalHash?: string;
+  migrated?: boolean;
+  migratedAt?: number;
+  cleanedUp?: boolean;
+}
+
+interface VerificationData {
+  method?: string;
+  [key: string]: any;
+}
+
+interface DocumentStore {
+  [key: string]: StoredDocument;
+}
+
 class DocumentService {
-  constructor(provider, signer) {
-    this.provider = provider;
-    this.signer = signer;
+  constructor() {
+    // Constructor is empty as we don't need to store provider/signer for local storage operations
   }
 
-  createDocumentHash(fileContent, fileName, metadata = {}) {
+  createDocumentHash(fileContent: string, fileName: string, metadata: Record<string, any> = {}): string {
     return createDocumentServiceHash(fileContent, fileName, metadata);
   }
 
   /**
    * Migrate old documents with 0x keys to normalized keys
    */
-  migrateDocumentKeys() {
+  migrateDocumentKeys(): void {
     try {
       const stored = localStorage.getItem('docverify_documents');
       if (!stored) return;
       
-      const documents = JSON.parse(stored);
+      const documents: DocumentStore = JSON.parse(stored);
       let migrated = false;
       
-      const migratedDocs = {};
+      const migratedDocs: DocumentStore = {};
       
       for (const [key, doc] of Object.entries(documents)) {
         const normalizedKey = normalizeHash(key);
@@ -57,12 +85,12 @@ class DocumentService {
     }
   }
 
-  getStoredDocuments() {
+  getStoredDocuments(): DocumentStore {
     try {
       const stored = localStorage.getItem('docverify_documents');
       if (!stored) return {};
       
-      const documents = JSON.parse(stored);
+      const documents: DocumentStore = JSON.parse(stored);
       
       // Auto-migrate on first access
       const hasOldKeys = Object.keys(documents).some(key => key.startsWith('0x'));
@@ -80,7 +108,7 @@ class DocumentService {
     }
   }
 
-  getDocumentStatus(documentHash) {
+  getDocumentStatus(documentHash: string): { exists: boolean; status: string | null; document: StoredDocument | null } {
     const normalizedHash = normalizeHash(documentHash);
     const documents = this.getStoredDocuments();
     
@@ -112,13 +140,13 @@ class DocumentService {
     };
   }
 
-  markDocumentVerified(documentHash, verificationData = {}) {
+  markDocumentVerified(documentHash: string, verificationData: VerificationData = {}): boolean {
     const normalizedHash = normalizeHash(documentHash);
     const documents = this.getStoredDocuments();
     
     // Try to find the document
-    let foundKey = null;
-    let foundDoc = null;
+    let foundKey: string | null = null;
+    let foundDoc: StoredDocument | null = null;
     
     // Direct lookup
     if (documents[normalizedHash]) {
@@ -145,7 +173,7 @@ class DocumentService {
     const normalizedKey = normalizeHash(foundKey);
     
     // Remove old key if it was different
-    if (foundKey !== normalizedKey) {
+    if (foundKey !== normalizedKey && foundKey !== null) {
       delete documents[foundKey];
     }
     
@@ -177,7 +205,7 @@ class DocumentService {
     }
   }
 
-  async storeDocumentAsPending(fileContent, fileName, metadata = {}) {
+  async storeDocumentAsPending(fileContent: string, fileName: string, metadata: Record<string, any> = {}): Promise<{ success: boolean; documentHash?: string; status?: string; error?: string }> {
     const documentHash = this.createDocumentHash(fileContent, fileName, metadata);
     const normalizedHash = normalizeHash(documentHash); // Always normalize
     
@@ -212,7 +240,7 @@ class DocumentService {
         documentHash: normalizedHash,
         status: 'pending'
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to store document:', error);
       return {
         success: false,
@@ -221,7 +249,7 @@ class DocumentService {
     }
   }
 
-  getDocumentStats() {
+  getDocumentStats(): { totalDocuments: number; verifiedDocuments: number; pendingDocuments: number; totalVerifications: number } {
     try {
       const documents = this.getStoredDocuments();
       const documentArray = Object.values(documents);
@@ -245,7 +273,7 @@ class DocumentService {
     }
   }
 
-  async verifyDocument(fileContent, fileName) {
+  async verifyDocument(fileContent: string, fileName: string): Promise<{ isValid: boolean; status: string; documentData: StoredDocument | null; verificationTime: number; blockchainStored: boolean; transactionHash?: string; error?: string }> {
     try {
       const documentHash = this.createDocumentHash(fileContent, fileName);
       const normalizedHash = normalizeHash(documentHash);
@@ -258,7 +286,7 @@ class DocumentService {
           status: documents[normalizedHash].status,
           documentData: documents[normalizedHash],
           verificationTime: Date.now(),
-          blockchainStored: documents[normalizedHash].blockchainStored,
+          blockchainStored: documents[normalizedHash].blockchainStored || false,
           transactionHash: documents[normalizedHash].transactionHash
         };
       }
@@ -272,7 +300,7 @@ class DocumentService {
             status: doc.status,
             documentData: doc,
             verificationTime: Date.now(),
-            blockchainStored: doc.blockchainStored,
+            blockchainStored: doc.blockchainStored || false,
             transactionHash: doc.transactionHash
           };
         }
@@ -285,7 +313,7 @@ class DocumentService {
         verificationTime: Date.now(),
         blockchainStored: false
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error verifying document:', error);
       return {
         isValid: false,
@@ -299,7 +327,7 @@ class DocumentService {
   }
 
   // Method to manually clean up old 0x-prefixed keys
-  cleanupOldKeys() {
+  cleanupOldKeys(): boolean {
     try {
       const documents = this.getStoredDocuments();
       let cleaned = false;
@@ -335,10 +363,10 @@ class DocumentService {
     }
   }
 
-  getRecentActivity(limit = 10) {
+  getRecentActivity(limit: number = 10): Array<{ id: string; type: string; message: string; timestamp: number; hash: string; status: string; localOnly: boolean; blockchainStored: boolean }> {
     try {
       const documents = this.getStoredDocuments();
-      const activities = [];
+      const activities: Array<{ id: string; type: string; message: string; timestamp: number; hash: string; status: string; localOnly: boolean; blockchainStored: boolean }> = [];
       
       Object.values(documents).forEach((doc, index) => {
         if (!doc || !doc.fileName) return; // Skip invalid documents
@@ -368,7 +396,7 @@ class DocumentService {
     }
   }
 
-  findDocumentByHash(searchHash) {
+  findDocumentByHash(searchHash: string): StoredDocument | null {
     try {
       const normalizedSearchHash = normalizeHash(searchHash);
       const documents = this.getStoredDocuments();
@@ -393,7 +421,7 @@ class DocumentService {
     }
   }
 
-  clearAllDocuments() {
+  clearAllDocuments(): void {
     try {
       localStorage.removeItem('docverify_documents');
       window.dispatchEvent(new CustomEvent('documentStatsChanged', {
@@ -405,7 +433,7 @@ class DocumentService {
   }
 
   // Additional utility methods for better error handling
-  isStorageAvailable() {
+  isStorageAvailable(): boolean {
     try {
       const test = '__storage_test__';
       localStorage.setItem(test, test);
@@ -417,10 +445,10 @@ class DocumentService {
     }
   }
 
-  getStorageInfo() {
+  getStorageInfo(): { available: boolean; used: number; documentCount?: number; approximateTotal?: number } {
     try {
       if (!this.isStorageAvailable()) {
-        return { available: false, used: 0, total: 0 };
+        return { available: false, used: 0 };
       }
 
       const documents = this.getStoredDocuments();
@@ -435,12 +463,12 @@ class DocumentService {
       };
     } catch (error) {
       console.error('❌ Error getting storage info:', error);
-      return { available: false, used: 0, total: 0 };
+      return { available: false, used: 0 };
     }
   }
 
   // Validate document integrity
-  validateDocument(document) {
+  validateDocument(document: StoredDocument): boolean {
     try {
       if (!document) return false;
       if (!document.hash || !document.fileName) return false;
@@ -455,7 +483,7 @@ class DocumentService {
   }
 
   // Repair corrupted documents
-  repairDocuments() {
+  repairDocuments(): boolean {
     try {
       const documents = this.getStoredDocuments();
       let repaired = false;
@@ -463,7 +491,7 @@ class DocumentService {
       for (const [hash, doc] of Object.entries(documents)) {
         if (!this.validateDocument(doc)) {
           // Try to repair common issues
-          const repairedDoc = {
+          const repairedDoc: StoredDocument = {
             ...doc,
             hash: doc.hash || hash,
             fileName: doc.fileName || 'Unknown Document',

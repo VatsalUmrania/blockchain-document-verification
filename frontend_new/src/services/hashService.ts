@@ -4,7 +4,7 @@ import CryptoJS from 'crypto-js';
 /**
  * Normalize hash by removing '0x' prefix if present and converting to lowercase
  */
-export const normalizeHash = (hash) => {
+export const normalizeHash = (hash: string | any): string => {
   if (!hash) return '';
   let normalized = hash.toString().toLowerCase();
   return normalized.startsWith('0x') ? normalized.slice(2) : normalized;
@@ -13,14 +13,22 @@ export const normalizeHash = (hash) => {
 /**
  * Generate document hash with proper normalization
  */
-export const generateDocumentHash = (file, metadata = {}) => {
+export const generateDocumentHash = (file: File, metadata: Record<string, any> = {}): Promise<any> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
-    reader.onload = (event) => {
+    reader.onload = (event: ProgressEvent<FileReader>) => {
       try {
+        // Fix: Check for null target and result
+        if (!event.target || !event.target.result) {
+          throw new Error('Failed to read file data');
+        }
+        
         const arrayBuffer = event.target.result;
-        const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+        // Fix: Handle the case where arrayBuffer could be a string
+        const wordArray = typeof arrayBuffer === 'string' 
+          ? CryptoJS.enc.Utf8.parse(arrayBuffer)
+          : CryptoJS.lib.WordArray.create(arrayBuffer as ArrayBuffer);
         
         // Create consistent metadata object (order matters for hash consistency)
         const consistentMetadata = {
@@ -40,7 +48,7 @@ export const generateDocumentHash = (file, metadata = {}) => {
           .reduce((result, key) => {
             result[key] = consistentMetadata[key];
             return result;
-          }, {});
+          }, {} as Record<string, any>);
         
         // Create hash from file content only (more reliable)
         const rawFileHash = CryptoJS.SHA256(wordArray).toString();
@@ -69,9 +77,9 @@ export const generateDocumentHash = (file, metadata = {}) => {
       }
     };
     
-    reader.onerror = (error) => {
+    reader.onerror = (error: ProgressEvent<FileReader>) => {
       console.error('File reading error:', error);
-      reject(error);
+      reject(new Error('Failed to read file'));
     };
     
     // Read as ArrayBuffer for consistent binary data
@@ -82,7 +90,7 @@ export const generateDocumentHash = (file, metadata = {}) => {
 /**
  * Enhanced verification function with proper hash normalization
  */
-export const verifyDocumentHash = async (file, expectedHash, options = {}) => {
+export const verifyDocumentHash = async (file: File, expectedHash: string, options: Record<string, any> = {}): Promise<any> => {
   try {
     console.log('🔍 Starting verification for:', file.name);
     console.log('📝 Expected hash:', expectedHash);
@@ -141,7 +149,7 @@ export const verifyDocumentHash = async (file, expectedHash, options = {}) => {
         timestamp: Date.now()
       }
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Hash verification error:', error);
     return {
       isValid: false,
@@ -161,7 +169,7 @@ export const verifyDocumentHash = async (file, expectedHash, options = {}) => {
 /**
  * Utility function to compare two files
  */
-export const compareFiles = async (file1, file2) => {
+export const compareFiles = async (file1: File, file2: File): Promise<any> => {
   try {
     const [hash1, hash2] = await Promise.all([
       generateDocumentHash(file1),
@@ -175,7 +183,7 @@ export const compareFiles = async (file1, file2) => {
       file1Info: hash1.file,
       file2Info: hash2.file
     };
-  } catch (error) {
+  } catch (error: any) {
     return {
       identical: false,
       error: error.message
@@ -186,7 +194,7 @@ export const compareFiles = async (file1, file2) => {
 /**
  * Create a consistent hash for DocumentService integration
  */
-export const createDocumentServiceHash = (fileContent, fileName, metadata = {}) => {
+export const createDocumentServiceHash = (fileContent: string, fileName: string, metadata: Record<string, any> = {}): string => {
   const documentData = {
     contentSample: fileContent.substring(0, 1000), // First 1KB for consistency
     fileName: fileName,
@@ -205,7 +213,7 @@ export const createDocumentServiceHash = (fileContent, fileName, metadata = {}) 
 /**
  * Validate hash format
  */
-export const validateHashFormat = (hash) => {
+export const validateHashFormat = (hash: string): { isValid: boolean; length: number; normalized: string; hadPrefix: boolean | undefined } => {
   const normalized = normalizeHash(hash);
   return {
     isValid: /^[a-f0-9]{64}$/i.test(normalized),

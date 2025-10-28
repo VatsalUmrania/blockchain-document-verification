@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -76,7 +75,7 @@ interface ChartCardProps {
 type TimeRange = 'week' | 'month' | 'quarter' | 'year';
 
 const AnalyticsDashboard: React.FC = () => {
-  const { account, isConnected } = useWeb3();
+  const { isConnected } = useWeb3();
   
   // State
   const [analytics, setAnalytics] = useState<Analytics>({

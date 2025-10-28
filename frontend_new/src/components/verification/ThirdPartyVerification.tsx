@@ -29,7 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import BlockchainService from '../../services/blockchainService';
 import { useWeb3 } from '../../context/Web3Context';
-import { DocumentMetadata, VerificationResult } from '../../types/document.types';
+import { DocumentMetadata, VerificationResult, BlockchainDocument } from '../../types/document.types';
 import HashDisplay from '../common/HashDisplay';
 
 // Types and Interfaces
@@ -41,7 +41,7 @@ interface Document {
   recipientName: string;
   recipientId?: string;
   issuanceDate: string | Date;
-  expirationDate?: string | Date;
+  expirationDate?: string | Date | null;
   issuerName: string;
   issuer: string;
   isActive: boolean;
@@ -123,6 +123,21 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
     return binary;
   }, []);
 
+  // Convert BlockchainDocument to Document interface
+  const convertBlockchainDocumentToDocument = (blockchainDoc: BlockchainDocument): Document => {
+    return {
+      documentType: blockchainDoc.documentType,
+      title: blockchainDoc.title,
+      recipientName: blockchainDoc.recipientName,
+      recipientId: blockchainDoc.recipientId,
+      issuanceDate: blockchainDoc.issuanceDate,
+      expirationDate: blockchainDoc.expirationDate,
+      issuerName: blockchainDoc.issuerName,
+      issuer: blockchainDoc.issuer,
+      isActive: blockchainDoc.isActive
+    };
+  };
+
   // Verify document by file
   const verifyDocumentByFile = useCallback(async (): Promise<void> => {
     if (!selectedFile) {
@@ -162,8 +177,20 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
       const calculatedHash = blockchainService.createDocumentHash(fileContent, basicMetadata);
       console.log('🔍 Calculated document hash:', calculatedHash);
 
-      const result = await blockchainService.verifyDocumentOnChain(calculatedHash);
-      setVerificationResult(result);
+      const result: VerificationResult = await blockchainService.verifyDocumentOnChain(calculatedHash);
+      
+      // Convert the result to match VerificationResultData interface
+      const convertedResult: VerificationResultData = {
+        isValid: result.isValid,
+        document: result.document ? convertBlockchainDocumentToDocument(result.document) : undefined,
+        errors: result.errors,
+        warnings: result.warnings,
+        blockchainConfirmed: result.blockchainConfirmed,
+        transactionHash: result.transactionHash,
+        blockNumber: result.blockNumber
+      };
+      
+      setVerificationResult(convertedResult);
 
       if (result.isValid) {
         toast.success('Document Verified', {
@@ -220,8 +247,20 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
       const blockchainService = new BlockchainService(provider, await provider.getSigner());
       await blockchainService.initialize();
 
-      const result = await blockchainService.verifyDocumentOnChain(documentHash.trim());
-      setVerificationResult(result);
+      const result: VerificationResult = await blockchainService.verifyDocumentOnChain(documentHash.trim());
+      
+      // Convert the result to match VerificationResultData interface
+      const convertedResult: VerificationResultData = {
+        isValid: result.isValid,
+        document: result.document ? convertBlockchainDocumentToDocument(result.document) : undefined,
+        errors: result.errors,
+        warnings: result.warnings,
+        blockchainConfirmed: result.blockchainConfirmed,
+        transactionHash: result.transactionHash,
+        blockNumber: result.blockNumber
+      };
+      
+      setVerificationResult(convertedResult);
 
       if (result.isValid) {
         toast.success('Document Verified', {

@@ -4,7 +4,6 @@ import { useWeb3 } from '../../context/Web3Context';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import {
   DropdownMenu,
@@ -26,13 +25,12 @@ import {
   CheckCircle,
   AlertTriangle,
   Copy,
-  X,
+  CircleDot,
   ChevronDown,
   Signal,
   Globe,
   Sparkles,
-  LogOut,
-  CircleDot
+  LogOut
 } from 'lucide-react';
 
 // Types
@@ -40,16 +38,6 @@ interface NetworkInfo {
   name: string;
   color: 'default' | 'destructive' | 'secondary' | 'outline';
   bgClass: string;
-}
-
-interface Web3ContextType {
-  account: string | null;
-  isConnected: boolean;
-  connectWallet: () => Promise<void>;
-  disconnectWallet: () => void;
-  isLoading: boolean;
-  balance: string | null;
-  chainId: number | null;
 }
 
 const WalletConnect: React.FC = () => {
@@ -61,7 +49,7 @@ const WalletConnect: React.FC = () => {
     isLoading, 
     balance, 
     chainId 
-  } = useWeb3() as Web3ContextType;
+  } = useWeb3();
   
   const [showDetails, setShowDetails] = useState<boolean>(false);
   const { toast } = useToast();

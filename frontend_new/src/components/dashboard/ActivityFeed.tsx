@@ -62,8 +62,7 @@ interface ActivitySkeletonProps {
 const ActivityFeed: React.FC<ActivityFeedProps> = ({ 
   activities = [], 
   loading = false, 
-  emptyMessage, 
-  maxHeight = '24rem' 
+  emptyMessage
 }) => {
   // Loading skeleton component
   const ActivitySkeleton: React.FC<ActivitySkeletonProps> = ({ index }) => (

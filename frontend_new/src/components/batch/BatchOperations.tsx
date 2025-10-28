@@ -6,7 +6,6 @@ import {
   Trash2, 
   Share,
   Download,
-  Copy,
   Package,
   BarChart3,
   Clock,
