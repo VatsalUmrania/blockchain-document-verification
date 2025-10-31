@@ -1,24 +1,23 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FileText, 
-  Calendar, 
-  Tag,
-  Share,
+  FileText,
   CheckCircle,
   Clock,
   AlertTriangle,
+  Calendar,
+  Share,
   Eye,
-  EyeOff,
-  User,
-  Info,
-  Shield,
   File,
   Folder,
   BarChart3,
   Hash,
-  Package,
-  Image
+  Image,
+  Tag,
+  User,
+  Info,
+  EyeOff,
+  Shield
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

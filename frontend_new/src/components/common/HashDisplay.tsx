@@ -1,5 +1,5 @@
-// src/components/common/HashDisplay.jsx
-import React, { useState } from 'react';
+// src/components/common/HashDisplay.tsx
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { 
@@ -11,20 +11,30 @@ import {
   LinkIcon
 } from '@heroicons/react/24/outline';
 
-const HashDisplay = ({ 
-  hash, 
+interface HashDisplayProps {
+  hash?: string;
+  label?: string;
+  showFullHash?: boolean;
+  copyable?: boolean;
+  showLabel?: boolean;
+  variant?: 'default' | 'compact' | 'card' | 'inline';
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const HashDisplay: React.FC<HashDisplayProps> = ({ 
+  hash = '', 
   label = "Document Hash", 
   showFullHash = false, 
   copyable = true, 
   showLabel = true,
-  variant = 'default', // 'default', 'compact', 'card', 'inline'
-  size = 'md' // 'sm', 'md', 'lg'
+  variant = 'default',
+  size = 'md'
 }) => {
   const [isExpanded, setIsExpanded] = useState(showFullHash);
   const [justCopied, setJustCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  const formatHash = (hash) => {
+  const formatHash = (hash: string): string => {
     if (!hash) return 'No hash available';
     
     if (isExpanded || variant === 'compact') {
@@ -32,13 +42,13 @@ const HashDisplay = ({
     }
     
     // Responsive hash display based on size
-    const displayLengths = {
+    const displayLengths: Record<string, { start: number; end: number }> = {
       sm: { start: 6, end: 6 },
       md: { start: 10, end: 10 },
       lg: { start: 15, end: 15 }
     };
     
-    const { start, end } = displayLengths[size];
+    const { start, end } = displayLengths[size] || displayLengths.md;
     return `${hash.slice(0, start)}...${hash.slice(-end)}`;
   };
 
@@ -51,9 +61,7 @@ const HashDisplay = ({
     try {
       await navigator.clipboard.writeText(hash);
       setJustCopied(true);
-      toast.success('📋 Hash copied to clipboard!', {
-        icon: '📋'
-      });
+      toast.success('📋 Hash copied to clipboard!');
       
       // Reset the copied state after 2 seconds
       setTimeout(() => setJustCopied(false), 2000);

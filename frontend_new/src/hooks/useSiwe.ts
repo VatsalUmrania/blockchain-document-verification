@@ -15,6 +15,14 @@ export const useSiwe = () => {
       // Get nonce from backend
       const { nonce } = await siweService.getNonce();
 
+      // Get chainId safely
+      let chainId: number;
+      if (typeof window !== 'undefined' && window.ethereum) {
+        chainId = parseInt(await window.ethereum.request({ method: 'eth_chainId' }), 16);
+      } else {
+        chainId = 1; // Default to mainnet if not available
+      }
+
       // Create SIWE message
       const siweMessage = new SiweMessage({
         domain: window.location.host,
@@ -22,7 +30,7 @@ export const useSiwe = () => {
         statement: SIWE_STATEMENT,
         uri: window.location.origin,
         version: '1',
-        chainId: parseInt(await window.ethereum.request({ method: 'eth_chainId' }), 16),
+        chainId,
         nonce
       });
 

@@ -27,8 +27,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import QRCodeScanner from './QRCodeScanner';
 import VerificationResult from './VerificationResult';
@@ -80,12 +78,6 @@ interface HashValidation {
 interface QRScanResult {
   hash: string;
   [key: string]: any;
-}
-
-interface DragEvent extends React.DragEvent<HTMLDivElement> {
-  dataTransfer: {
-    files: FileList;
-  };
 }
 
 const VerificationPortal: React.FC = () => {
@@ -161,7 +153,7 @@ const VerificationPortal: React.FC = () => {
       
       if (isConnected && provider && signer) {
         try {
-          documentService = new DocumentService(provider, signer);
+          documentService = new DocumentService();
           
           // Check if this hash exists in our storage
           documentStatus = documentService.getDocumentStatus(normalizedHash);
@@ -473,8 +465,8 @@ const VerificationPortal: React.FC = () => {
       const file = e.dataTransfer.files[0];
       const mockEvent = {
         target: { files: [file] }
-      } as React.ChangeEvent<HTMLInputElement>;
-      handleFileSelect(mockEvent);
+      };
+      handleFileSelect(mockEvent as unknown as React.ChangeEvent<HTMLInputElement>);
     }
   }, [handleFileSelect]);
 

@@ -1,24 +1,23 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { 
-  FileText, 
-  CheckCircle, 
-  Clock, 
-  BarChart3,
-  Upload,
+  FileText,
   Shield,
+  CheckCircle,
+  AlertCircle,
   TrendingUp,
   Wallet,
   RefreshCw,
-  Link,
   Server,
   AlertTriangle,
   Eye,
-  Home,
-  Database
+  Database,
+  Clock,
+  BarChart3,
+  Upload
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Fixed import
+import { useNavigate } from 'react-router-dom';
 import { useWeb3 } from '../../context/Web3Context';
 import { useDocumentStats } from '../../context/DocumentStatsContext';
 import StatCard from './StatCard';
@@ -170,6 +169,30 @@ const Dashboard: React.FC = () => {
       </div>
     );
   }
+
+  // Map ActivityItem to Activity for compatibility with ActivityFeed
+  const mapActivityItemToActivity = (item: any): any => {
+    // Map the type field
+    let type = item.type;
+    if (type === 'issued') type = 'issue';
+    if (type === 'verified') type = 'verification';
+    if (type === 'revoked') type = 'delete';
+    
+    // Map the status field
+    let status = item.status || 'active';
+    if (status === 'verified') status = 'verified';
+    if (status === 'pending') status = 'pending';
+    if (status === 'failed') status = 'failed';
+    
+    return {
+      ...item,
+      type,
+      status
+    };
+  };
+
+  // Map recentActivity to compatible Activity array
+  const mappedActivities = recentActivity.map(mapActivityItemToActivity);
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -329,7 +352,7 @@ const Dashboard: React.FC = () => {
           {/* Recent Activity */}
           <div className="lg:col-span-2">
             <ActivityFeed 
-              activities={recentActivity} 
+              activities={mappedActivities} 
               loading={isLoading}
               emptyMessage="No document activity yet. Upload or verify documents to see activity here."
             />

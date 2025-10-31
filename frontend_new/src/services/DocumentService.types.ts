@@ -1,4 +1,3 @@
-import { BrowserProvider, JsonRpcSigner } from 'ethers';
 import { DocumentStats, ActivityItem, StorageInfo } from '../types/document.types';
 
 export interface IDocumentService {
@@ -9,12 +8,8 @@ export interface IDocumentService {
 }
 
 export class DocumentService implements IDocumentService {
-  private provider: BrowserProvider | null;
-  private signer: JsonRpcSigner | null;
-
-  constructor(provider: BrowserProvider | null, signer: JsonRpcSigner | null) {
-    this.provider = provider;
-    this.signer = signer;
+  constructor() {
+    // Constructor is empty as we don't need to store provider/signer for local storage operations
   }
 
   isStorageAvailable(): boolean {
