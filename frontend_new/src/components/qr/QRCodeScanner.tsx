@@ -2,16 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   QrCode,
-  Camera,
   Square,
   AlertTriangle,
   CheckCircle,
   XCircle,
   Play,
-  Search,
   Loader2,
   Video,
-  VideoOff
+  Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +22,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import BlockchainService from '../../services/blockchainService';
 import { useWeb3 } from '../../context/Web3Context';
+import { VerificationResult } from '../../types/document.types';
 // Note: You'll need to install jsqr for QR code detection
 // npm install jsqr @types/jsqr
 import jsQR from 'jsqr';
@@ -42,20 +41,6 @@ interface VerificationData {
     recipient: string;
     issuanceDate: number | string;
   };
-}
-
-interface VerificationResult {
-  isValid: boolean;
-  document?: {
-    documentType: string;
-    recipientName: string;
-    issuerName: string;
-    issuanceDate?: string;
-    [key: string]: any;
-  };
-  errors?: string[];
-  transactionHash?: string;
-  blockNumber?: number;
 }
 
 interface QRCodeScannerProps {
@@ -275,10 +260,10 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
       console.error('QR verification error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown verification error';
       
-      const failedResult: VerificationResult = {
+      const failedResult: VerificationResult = new VerificationResult({
         isValid: false,
         errors: [errorMessage]
-      };
+      });
 
       setVerificationResult(failedResult);
       

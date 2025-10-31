@@ -968,7 +968,6 @@ import {
   Wallet,
   Building,
   FilePlus,
-  QrCode,
   Home,
   Sun,
   Moon,
@@ -1049,7 +1048,6 @@ const useDeviceType = () => {
 
 const Navbar: React.FC<NavbarProps> = ({ className }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [theme, setTheme] = useState<Theme>('dark');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
   const [mounted, setMounted] = useState<boolean>(false);
   
@@ -1066,7 +1064,7 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
     signInWithEthereum,
     logout
   } = useWeb3();
-  const { deviceType, isTouchDevice } = useDeviceType();
+  const { deviceType } = useDeviceType();
 
   // Navigation items
   const navigationItems: NavigationItem[] = [
@@ -1083,7 +1081,6 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
   useEffect(() => {
     setMounted(true);
     const savedTheme = localStorage.getItem('theme') as Theme || 'dark';
-    setTheme(savedTheme);
     updateResolvedTheme(savedTheme);
   }, []);
 
@@ -1111,7 +1108,6 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
 
   const toggleTheme = useCallback((): void => {
     const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
     updateResolvedTheme(newTheme);
   }, [resolvedTheme, updateResolvedTheme]);
