@@ -5,7 +5,6 @@ import {
   FileText,
   Shield,
   CheckCircle,
-  AlertCircle,
   TrendingUp,
   Wallet,
   RefreshCw,
@@ -29,12 +28,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 
 // Types
-interface DashboardStats {
-  totalDocuments: number;
-  verifiedDocuments: number;
-  pendingDocuments: number;
-  totalVerifications: number;
-}
+// interface DashboardStats {
+//   totalDocuments: number;
+//   verifiedDocuments: number;
+//   pendingDocuments: number;
+//   totalVerifications: number;
+// }
 
 interface QuickActionProps {
   title: string;

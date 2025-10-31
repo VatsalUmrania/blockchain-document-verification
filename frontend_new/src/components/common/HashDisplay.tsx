@@ -1,7 +1,7 @@
 // src/components/common/HashDisplay.tsx
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'react-toastify';
+import { toast, ToastOptions } from 'react-toastify';
 import { 
   DocumentDuplicateIcon, 
   EyeIcon, 
@@ -10,6 +10,7 @@ import {
   HashtagIcon,
   LinkIcon
 } from '@heroicons/react/24/outline';
+import { cn } from '@/lib/utils';
 
 interface HashDisplayProps {
   hash?: string;
@@ -19,6 +20,7 @@ interface HashDisplayProps {
   showLabel?: boolean;
   variant?: 'default' | 'compact' | 'card' | 'inline';
   size?: 'sm' | 'md' | 'lg';
+  className?: string;
 }
 
 const HashDisplay: React.FC<HashDisplayProps> = ({ 
@@ -27,8 +29,9 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
   showFullHash = false, 
   copyable = true, 
   showLabel = true,
-  variant = 'default',
-  size = 'md'
+  variant = 'default', // 'default', 'compact', 'card', 'inline'
+  size = 'md', // 'sm', 'md', 'lg'
+  className = ''
 }) => {
   const [isExpanded, setIsExpanded] = useState(showFullHash);
   const [justCopied, setJustCopied] = useState(false);
@@ -61,7 +64,9 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
     try {
       await navigator.clipboard.writeText(hash);
       setJustCopied(true);
-      toast.success('📋 Hash copied to clipboard!');
+      toast.success('📋 Hash copied to clipboard!', {
+        icon: '📋' as any
+      } as ToastOptions);
       
       // Reset the copied state after 2 seconds
       setTimeout(() => setJustCopied(false), 2000);
@@ -107,7 +112,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
   // Compact variant for inline display
   if (variant === 'compact') {
     return (
-      <span className={`inline-flex items-center ${config.spacing}`}>
+      <span className={cn(`inline-flex items-center ${config.spacing}`, className)}>
         <code className={`hash-compact ${config.text} ${config.padding} font-mono`}>
           {formatHash(hash)}
         </code>
@@ -153,7 +158,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={{ scale: 1.01 }}
-        className="hash-card rounded-xl p-6 shadow-lg transition-all duration-300"
+        className={cn("hash-card rounded-xl p-6 shadow-lg transition-all duration-300", className)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -254,7 +259,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
   // Inline variant for simple display
   if (variant === 'inline') {
     return (
-      <span className={`inline-flex items-center ${config.spacing} bg-[rgb(var(--surface-primary))] ${config.padding} rounded-lg border border-[rgb(var(--border-primary))]`}>
+      <span className={cn(`inline-flex items-center ${config.spacing} bg-[rgb(var(--surface-primary))] ${config.padding} rounded-lg border border-[rgb(var(--border-primary))]`, className)}>
         <code className={`font-mono ${config.text} text-[rgb(var(--color-primary))]`}>
           {formatHash(hash)}
         </code>
@@ -295,7 +300,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
 
   // Default variant
   return (
-    <div className={`space-y-${size === 'sm' ? '2' : '3'}`}>
+    <div className={cn(`space-y-${size === 'sm' ? '2' : '3'}`, className)}>
       {showLabel && (
         <div className={`flex items-center ${config.spacing}`}>
           <HashtagIcon className={`${config.iconSize} text-[rgb(var(--color-primary))]`} />

@@ -1268,6 +1268,8 @@ const DocumentIssuanceWorkflow: React.FC = () => {
               const currentData = prev.toJSON ? prev.toJSON() : prev;
               const updatedData: DocumentMetadataInput = {
                 ...currentData,
+                documentType: currentData.documentType || 'document',
+                recipientName: currentData.recipientName || '',
                 issuerName: institutionInfo.name,
                 issuerRegistrationNumber: institutionInfo.registrationNumber,
                 issuerContact: institutionInfo.contactInfo,
@@ -1299,8 +1301,19 @@ const DocumentIssuanceWorkflow: React.FC = () => {
   const updateMetadata = useCallback((field: string, value: any): void => {
     setMetadata(prev => {
       const currentData = prev.toJSON ? prev.toJSON() : prev;
-      const updatedData = { ...currentData, [field]: value };
-      return new DocumentMetadata(updatedData);
+      // Ensure required fields are present
+      const safeCurrentData = {
+        ...currentData,
+        documentType: currentData.documentType || 'document',
+        recipientName: currentData.recipientName || ''
+      };
+      
+      const updatedData = { 
+        ...safeCurrentData, 
+        [field]: value 
+      };
+      
+      return new DocumentMetadata(updatedData as DocumentMetadataInput);
     });
   }, []);
 
