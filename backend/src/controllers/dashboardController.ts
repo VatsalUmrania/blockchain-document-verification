@@ -47,7 +47,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const blockchainRole = role === UserRole.INSTITUTE ? 'institute' : 'individual';
     
     // Fetch stats from blockchain
-    const stats = await blockchainService.getDocumentStats(address, blockchainRole);
+    const stats = await blockchainService.getDocumentStats(address);
 
     res.json({
       success: true,
@@ -98,7 +98,7 @@ export const getUserDocuments = async (req: Request, res: Response) => {
       });
     }
 
-    const documents = await blockchainService.getIssuedDocuments(address, limit, offset);
+    const documents = await blockchainService.getIssuedDocuments(address);
 
     res.json({
       success: true,
@@ -136,8 +136,7 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     const { address, role } = req.user;
 
     // Get basic stats
-    const blockchainRole = role === UserRole.INSTITUTE ? 'institute' : 'individual';
-    const stats = await blockchainService.getDocumentStats(address, blockchainRole);
+    const stats = await blockchainService.getDocumentStats(address);
 
     // Get recent documents (last 5)
     const recentDocuments = role === UserRole.INSTITUTE 

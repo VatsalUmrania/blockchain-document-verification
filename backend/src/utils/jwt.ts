@@ -89,7 +89,7 @@ export const generateToken = (userId: string, address: string, role: UserRole): 
   }
 
   // Ensure userId is a string
-  const userIdString = typeof userId === 'string' ? userId : userId.toString();
+  const userIdString = typeof userId === 'string' ? userId : String(userId);
   
   if (!userIdString || !address) {
     throw new Error('userId and address are required to generate token');
@@ -107,14 +107,10 @@ export const generateToken = (userId: string, address: string, role: UserRole): 
       ? config.jwtExpiresIn 
       : '7d';  // Default to 7 days
     
-    const options: SignOptions = {
-      expiresIn: expiresIn
-    };
-
     console.log('🔐 Generating token with payload:', payload);
     console.log('⏰ Token expires in:', expiresIn);
     
-    const token = jwt.sign(payload, config.jwtSecret, options);
+    const token = jwt.sign(payload, config.jwtSecret, { expiresIn: expiresIn as any });
     return token;
   } catch (error) {
     console.error('❌ JWT generation failed:', error);

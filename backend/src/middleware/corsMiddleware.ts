@@ -1,4 +1,4 @@
-import * as cors from 'cors';
+import cors from 'cors';
 import { config } from '../config/config';
 
 export const corsMiddleware = cors({
