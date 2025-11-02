@@ -1,0 +1,159 @@
+# Google Cloud Build configuration for blockchain document verification system
+steps:
+  # Step 1: Build the blockchain service (smart contracts)
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-blockchain"
+    args:
+      [
+        "build",
+        "-t",
+        "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_BLOCKCHAIN}:$COMMIT_SHA",
+        ".",
+      ]
+    dir: "."
+
+  # Step 2: Build the backend service
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-backend"
+    args:
+      [
+        "build",
+        "-t",
+        "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_BACKEND}:$COMMIT_SHA",
+        ".",
+      ]
+    dir: "./backend"
+
+  # Step 3: Build the frontend service
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-frontend"
+    args:
+      [
+        "build",
+        "-t",
+        "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_FRONTEND}:$COMMIT_SHA",
+        ".",
+      ]
+    dir: "./frontend_new"
+
+  # Step 4: Push the blockchain image to Container Registry
+  - name: "gcr.io/cloud-builders/docker"
+    id: "push-blockchain"
+    args:
+      [
+        "push",
+        "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_BLOCKCHAIN}:$COMMIT_SHA",
+      ]
+
+  # Step 5: Push the backend image to Container Registry
+  - name: "gcr.io/cloud-builders/docker"
+    id: "push-backend"
+    args:
+      [
+        "push",
+        "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_BACKEND}:$COMMIT_SHA",
+      ]
+
+  # Step 6: Push the frontend image to Container Registry
+  - name: "gcr.io/cloud-builders/docker"
+    id: "push-frontend"
+    args:
+      [
+        "push",
+        "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_FRONTEND}:$COMMIT_SHA",
+      ]
+
+  # Step 7: Deploy blockchain service to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "deploy-blockchain"
+    entrypoint: gcloud
+    args:
+      - "run"
+      - "deploy"
+      - "${_SERVICE_BLOCKCHAIN}"
+      - "--image"
+      - "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_BLOCKCHAIN}:$COMMIT_SHA"
+      - "--platform"
+      - "managed"
+      - "--region"
+      - "${_DEPLOY_REGION}"
+      - "--allow-unauthenticated"
+      - "--port"
+      - "8545"
+      - "--set-env-vars"
+      - "NODE_ENV=production"
+      - "--memory"
+      - "1Gi"
+      - "--cpu"
+      - "1"
+
+  # Step 8: Deploy backend service to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "deploy-backend"
+    entrypoint: gcloud
+    args:
+      - "run"
+      - "deploy"
+      - "${_SERVICE_BACKEND}"
+      - "--image"
+      - "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_BACKEND}:$COMMIT_SHA"
+      - "--platform"
+      - "managed"
+      - "--region"
+      - "${_DEPLOY_REGION}"
+      - "--allow-unauthenticated"
+      - "--port"
+      - "5000"
+      - "--set-env-vars"
+      - "NODE_ENV=production,PORT=5000,MONGO_URI=${_MONGO_URI},JWT_SECRET=${_JWT_SECRET},SESSION_SECRET=${_SESSION_SECRET},CONTRACT_ADDRESS=${_CONTRACT_ADDRESS},RPC_URL=${_RPC_URL},FRONTEND_URL=${_FRONTEND_URL}"
+      - "--memory"
+      - "512Mi"
+      - "--cpu"
+      - "1"
+
+  # Step 9: Deploy frontend service to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "deploy-frontend"
+    entrypoint: gcloud
+    args:
+      - "run"
+      - "deploy"
+      - "${_SERVICE_FRONTEND}"
+      - "--image"
+      - "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_FRONTEND}:$COMMIT_SHA"
+      - "--platform"
+      - "managed"
+      - "--region"
+      - "${_DEPLOY_REGION}"
+      - "--allow-unauthenticated"
+      - "--port"
+      - "5173"
+      - "--set-env-vars"
+      - "NODE_ENV=production"
+      - "--memory"
+      - "512Mi"
+      - "--cpu"
+      - "1"
+
+# Define images to be pushed to Container Registry
+images:
+  - "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_BLOCKCHAIN}:$COMMIT_SHA"
+  - "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_BACKEND}:$COMMIT_SHA"
+  - "${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/${_SERVICE_FRONTEND}:$COMMIT_SHA"
+
+# Define substitutions that can be provided during build trigger
+substitutions:
+  _GCR_HOSTNAME: gcr.io
+  _DEPLOY_REGION: us-central1
+  _SERVICE_BLOCKCHAIN: blockchain-service
+  _SERVICE_BACKEND: backend-service
+  _SERVICE_FRONTEND: frontend-service
+  _MONGO_URI: "mongodb://localhost:27017/document_verification"
+  _JWT_SECRET: "your_jwt_secret_key_here"
+  _SESSION_SECRET: "your_session_secret_here"
+  _CONTRACT_ADDRESS: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  _RPC_URL: "http://localhost:8545"
+  _FRONTEND_URL: "https://frontend-service-${_DEPLOY_REGION}-$PROJECT_ID.run.app"
+
+# Timeout for the entire build process
+timeout: 1800s
