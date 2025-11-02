@@ -24,7 +24,7 @@ COPY scripts/ ./scripts/
 
 # Copy artifacts if they exist
 # COPY artifacts/ ./artifacts/ 2>/dev/null || echo "No artifacts to copy"
-COPY artifacts/ ./artifacts/
+# COPY artifacts/ ./artifacts/
 
 # Expose default hardhat network port
 EXPOSE 8545
