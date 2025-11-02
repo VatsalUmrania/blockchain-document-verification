@@ -581,7 +581,22 @@
 
 import { ethers, Contract, JsonRpcProvider } from 'ethers';
 import { config } from '../config/config';
-import * as DocumentVerificationArtifact from '../../../artifacts/contracts/DocumentVerification.sol/DocumentVerification.json';
+
+// Try to import the artifact, with fallback for Docker environment
+let DocumentVerificationArtifact: any;
+try {
+  DocumentVerificationArtifact = require('../../../../artifacts/contracts/DocumentVerification.sol/DocumentVerification.json');
+} catch (e) {
+  try {
+    // Try to load empty artifact as fallback
+    DocumentVerificationArtifact = require('../empty-artifact.json');
+    console.warn('⚠️  Could not load contract artifact, using empty ABI');
+  } catch (fallbackError) {
+    // If even the fallback fails, use an empty object
+    DocumentVerificationArtifact = { abi: [] };
+    console.warn('⚠️  Could not load contract artifact or fallback, using empty ABI');
+  }
+}
 
 const DOCUMENT_VERIFICATION_ABI = DocumentVerificationArtifact.abi;
 
@@ -656,14 +671,33 @@ class BlockchainService {
         };
       }
 
-      const documentHashes = issuedEvents.map(e => e.args?.documentHash).filter(Boolean);
-      
+      // Fix TypeScript errors by properly handling event types
+      const documentHashes = issuedEvents.map(e => {
+        if ('args' in e) {
+          return e.args?.documentHash;
+        }
+        return undefined;
+      }).filter(Boolean) as string[];
+
       const revokeFilter = this.contract.filters.DocumentRevoked();
       const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
-      const revokedByThisIssuer = allRevokedEvents.filter(e => 
-        e.args?.issuer?.toLowerCase() === normalizedAddress
-      );
-      const revokedHashes = new Set(revokedByThisIssuer.map(e => e.args?.documentHash));
+      const revokedByThisIssuer = allRevokedEvents.filter(e => {
+        // Use type narrowing to check if args exists
+        if (typeof e === 'object' && e !== null && 'args' in e) {
+          const eventWithArgs = e as { args?: { issuer?: string } };
+          return eventWithArgs.args?.issuer?.toLowerCase() === normalizedAddress;
+        }
+        return false;
+      });
+
+      const revokedHashes = new Set(revokedByThisIssuer.map(e => {
+        // Use type narrowing to check if args exists
+        if (typeof e === 'object' && e !== null && 'args' in e) {
+          const eventWithArgs = e as { args?: { documentHash?: string } };
+          return eventWithArgs.args?.documentHash;
+        }
+        return undefined;
+      }).filter(Boolean) as string[]);
 
       let verifiedCount = 0;
 
@@ -839,10 +873,23 @@ class BlockchainService {
 
     const revokeFilter = this.contract.filters.DocumentRevoked();
     const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
-    const revokedByThisIssuer = allRevokedEvents.filter(e => 
-      e.args?.issuer?.toLowerCase() === normalizedAddress
-    );
-    const revokedHashes = new Set(revokedByThisIssuer.map(e => e.args?.documentHash));
+    const revokedByThisIssuer = allRevokedEvents.filter(e => {
+      // Check if the event has args property
+      if (Object.prototype.hasOwnProperty.call(e, 'args')) {
+        const event: any = e;
+        return event.args?.issuer?.toLowerCase() === normalizedAddress;
+      }
+      return false;
+    });
+
+    const revokedHashes = new Set(revokedByThisIssuer.map(e => {
+      // Check if the event has args property
+      if (Object.prototype.hasOwnProperty.call(e, 'args')) {
+        const event: any = e;
+        return event.args?.documentHash;
+      }
+      return undefined;
+    }).filter(Boolean) as string[]);
 
     const paginatedEvents = issuedEvents.slice(offset, offset + limit);
 
@@ -850,8 +897,12 @@ class BlockchainService {
 
     for (const event of paginatedEvents) {
       try {
-        const documentHash = event.args?.documentHash;
-        
+        // Properly handle event args
+        let documentHash: string | undefined;
+        if ('args' in event) {
+          documentHash = event.args?.documentHash;
+        }
+
         if (!documentHash) {
           console.warn('⚠️  Event missing documentHash:', event);
           continue;
@@ -903,14 +954,15 @@ class BlockchainService {
           blockNumber: event.blockNumber
         });
       } catch (docError) {
-        console.error(`❌ Error fetching document details for ${event.args?.documentHash}:`, docError);
+        console.error(`❌ Error fetching document details:`, docError);
+        // Remove references to event.args in error handling
         documents.push({
-          documentHash: event.args?.documentHash || '',
+          documentHash: '',
           issuer: issuerAddress,
           issuerName: 'Unknown Institution',
-          documentType: event.args?.documentType || 'other',
+          documentType: 'other',
           title: '',
-          recipientName: event.args?.recipientName || 'Unknown Recipient',
+          recipientName: 'Unknown Recipient',
           recipientId: '',
           issuanceDate: new Date(),
           expirationDate: null,
@@ -935,14 +987,15 @@ class BlockchainService {
     try {
       const doc = await this.contract.documents(documentHash);
       
-      if (!doc.issuer || doc.issuer === ethers.constants.AddressZero) {
+      if (!doc.issuer || doc.issuer === "0x0000000000000000000000000000000000000000") {
         return null;
       }
 
       const isRevoked = await this.contract.revokedDocuments(documentHash);
       
-      const expirationDate = doc.expirationDate && doc.expirationDate.toNumber() > 0
-        ? new Date(doc.expirationDate.toNumber() * 1000)
+      // Fix the args property access
+      const expirationDate = doc.expirationDate && Number(doc.expirationDate) > 0
+        ? new Date(Number(doc.expirationDate) * 1000)
         : null;
       const isExpired = expirationDate ? expirationDate < new Date() : false;
 
@@ -962,7 +1015,7 @@ class BlockchainService {
         issuer: doc.issuer,
         issuerName: doc.issuerName,
         documentType: doc.documentType,
-        title: doc.title || '',  // ← ADD TITLE
+        title: doc.title || '',
         recipientName: doc.recipientName,
         recipientId: doc.recipientId,
         issuanceDate: new Date(Number(doc.issuanceDate) * 1000),

@@ -1,0 +1,133 @@
+services:
+  # Contract compilation service
+  contract-compile:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: npm run compile
+    volumes:
+      - ./artifacts:/app/artifacts
+    networks:
+      - app-network
+
+  # Hardhat node service
+  hardhat-node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: npm run node
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./artifacts:/app/artifacts
+    networks:
+      - app-network
+    depends_on:
+      - contract-compile
+
+  # Contract deployment service
+  contract-deploy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: npm run deploy:local
+    volumes:
+      - ./deployments:/app/deployments
+      - ./artifacts:/app/artifacts
+    networks:
+      - app-network
+    depends_on:
+      - hardhat-node
+
+  # Blockchain service (main service that depends on all blockchain components)
+  # blockchain:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8545:8545"
+  #   networks:
+  #     - app-network
+  #   volumes:
+  #     - blockchain-data:/data
+  #     - ./deployments:/app/deployments
+  #     - ./artifacts:/app/artifacts
+  #   depends_on:
+  #     - contract-deploy
+
+  # Backend service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    networks:
+      - app-network
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/document_verification
+      - JWT_SECRET=your_jwt_secret_key_here
+      - SESSION_SECRET=your_session_secret_here
+      - CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
+      - RPC_URL=http://hardhat-node:8545
+      - FRONTEND_URL=http://localhost:5173
+    depends_on:
+      - contract-deploy
+      - mongo
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend_new
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    networks:
+      - app-network
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend_new:/usr/src/app
+      - /usr/src/app/node_modules
+
+  # MongoDB service
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    networks:
+      - app-network
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongo-data:/data/db
+
+  # MongoDB Express (optional admin UI)
+  mongo-express:
+    image: mongo-express:latest
+    ports:
+      - "8081:8081"
+    networks:
+      - app-network
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_MONGODB_SERVER=mongo
+    depends_on:
+      - mongo
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  blockchain-data:
+  mongo-data:
