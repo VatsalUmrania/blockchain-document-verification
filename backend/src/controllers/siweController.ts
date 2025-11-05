@@ -1,122 +1,6 @@
-// import { Request, Response } from 'express';
-// import { SiweMessage, generateNonce } from 'siwe';
-// import User, { UserRole } from '../models/User';
-// import { generateToken } from '../utils/jwt';
-// import { blockchainService } from '../services/blockchainService';
-
-// /**
-//  * @desc Generates a unique nonce for the SIWE message.
-//  * @route GET /api/auth/nonce
-//  * @access Public
-//  */
-// export const getNonce = (req: Request, res: Response) => {
-//   req.session.nonce = generateNonce();
-//   // Ensure the session is saved before sending the response
-//   req.session.save(() => {
-//     res.setHeader('Content-Type', 'text/plain');
-//     res.status(200).send(req.session.nonce);
-//   });
-// };
-
-// /**
-//  * @desc Verifies a signed SIWE message, creates or updates a user, and returns a JWT.
-//  * @route POST /api/auth/login
-//  * @access Public
-//  */
-// export const login = async (req: Request, res: Response) => {
-//   try {
-//     const { message, signature } = req.body;
-//     if (!message || !signature) {
-//       return res.status(400).json({ error: 'Message and signature are required.' });
-//     }
-
-//     // Reconstruct the SiweMessage from the object sent by the frontend
-//     const siweMessage = new SiweMessage(message);
-
-//     // Verify the message signature and nonce
-//     const fields = await siweMessage.verify({
-//       signature: signature,
-//       nonce: req.session.nonce,
-//     });
-
-//     const userAddress = fields.data.address;
-//     let user = await User.findOne({ address: userAddress.toLowerCase() });
-
-//     // Check the blockchain for the user's role
-//     const isInstitute = await blockchainService.isInstitutionVerified(userAddress);
-//     const userRole = isInstitute ? UserRole.INSTITUTE : UserRole.INDIVIDUAL;
-
-//     if (!user) {
-//       // If user is new, create them with the determined role
-//       user = new User({
-//         address: userAddress,
-//         role: userRole,
-//       });
-//     } else {
-//       // If user exists, update their role and last login time
-//       user.role = userRole;
-//       user.lastLoginAt = new Date();
-//     }
-    
-//     await user.save();
-    
-//     // Generate a JWT containing the user's ID, address, and role
-//     const token = generateToken({ id: user.id, address: user.address, role: user.role });
-
-//     // Destroy the session nonce after successful login
-//     return req.session.destroy((err) => {
-//       if (err) {
-//         console.error('Session destruction error:', err);
-//         return res.status(500).json({ error: 'Failed to clear session.' });
-//       }
-//       // Send the token and user data to the frontend
-//       return res.status(200).json({ token, user: user.toObject() });
-//     });
-
-//   } catch (error: any) {
-//     console.error('❌ Login error:', error);
-//     res.status(500).json({ 
-//         error: 'Login verification failed.', 
-//         details: error.message 
-//     });
-//   }
-// };
-
-// /**
-//  * @desc Gets the profile of the currently authenticated user.
-//  * @route GET /api/auth/me
-//  * @access Private
-//  */
-// export const getMe = async (req: Request, res: Response) => {
-//   try {
-//     // req.user is attached by the authMiddleware
-//     const user = await User.findById(req.user.id).select('-__v'); 
-//     if (!user) {
-//       return res.status(404).json({ error: 'User not found' });
-//     }
-//     res.status(200).json(user.toObject());
-//   } catch (error) {
-//     res.status(500).json({ error: 'Failed to fetch user profile' });
-//   }
-// };
-
-// /**
-//  * @desc Logs the user out by destroying the session.
-//  * @route POST /api/auth/logout
-//  * @access Public
-//  */
-// export const logout = (req: Request, res: Response) => {
-//   req.session.destroy((err) => {
-//     if (err) {
-//       return res.status(500).json({ error: 'Could not log out.' });
-//     }
-//     res.status(200).json({ message: 'Logged out successfully' });
-//   });
-// };
-
 import { Request, Response } from 'express';
 import { SiweMessage, generateNonce } from 'siwe';
-import User, { UserRole } from '../models/User';
+import User, { UserRole } from '../models/User'; // UserRole now includes ADMIN
 import { generateToken } from '../utils/jwt';
 import { blockchainService } from '../services/blockchainService';
 
@@ -247,6 +131,24 @@ export const verify = async (req: Request, res: Response) => {
 
     const userAddress = fields.data.address.toLowerCase();
     console.log('👤 Normalized address:', userAddress);
+
+    // ====================================================================
+    // --- 1. Perform ENS Reverse Lookup ---
+    // ====================================================================
+    let userEnsName: string | null = null;
+    try {
+      console.log(`🔎 Looking up ENS name for ${userAddress}...`);
+      // This function will now exist in blockchainService (see file 2)
+      userEnsName = await blockchainService.lookupAddress(userAddress); 
+      if (userEnsName) {
+        console.log(`✅ Found ENS name: ${userEnsName}`);
+      } else {
+        console.log('ℹ️  No ENS name found for address.');
+      }
+    } catch (error) {
+      console.warn(`⚠️  Could not fetch ENS name for ${userAddress}:`, (error as Error).message);
+    }
+    // ====================================================================
     
     // Check the blockchain for the user's role
     console.log('🔗 Checking blockchain for institution verification...');
@@ -261,6 +163,15 @@ export const verify = async (req: Request, res: Response) => {
     const userRole = isInstitute ? UserRole.INSTITUTE : UserRole.INDIVIDUAL;
     console.log('📊 User role determined:', userRole);
 
+    // Check for admin
+    let finalUserRole = userRole;
+    const adminAddress = process.env.ADMIN_ADDRESS?.toLowerCase();
+
+    if (adminAddress && userAddress === adminAddress) {
+      finalUserRole = UserRole.ADMIN;
+      console.log('👑 Admin user identified:', userAddress);
+    }
+
     // Find or create user
     console.log('💾 Looking up user in database...');
     let user = await User.findOne({ address: userAddress });
@@ -270,8 +181,9 @@ export const verify = async (req: Request, res: Response) => {
       try {
         user = new User({
           address: userAddress,
-          role: userRole,
-          ensName: fields.data.address,
+          role: finalUserRole,
+          // 2. FIXED: Convert null to undefined for TypeScript
+          ensName: userEnsName ? userEnsName : undefined, 
           lastLoginAt: new Date(),
         });
         await user.save();
@@ -287,7 +199,9 @@ export const verify = async (req: Request, res: Response) => {
     } else {
       console.log('📝 Updating existing user:', user._id);
       try {
-        user.role = userRole;
+        user.role = finalUserRole;
+        // 3. FIXED: Convert null to undefined for TypeScript
+        user.ensName = userEnsName ? userEnsName : undefined;
         user.lastLoginAt = new Date();
         await user.save();
         console.log('✅ User updated');
@@ -305,6 +219,7 @@ export const verify = async (req: Request, res: Response) => {
     console.log('   User ID:', user._id.toString());
     console.log('   Address:', user.address);
     console.log('   Role:', user.role);
+    console.log('   ENS:', user.ensName);
 
     // Generate JWT token
     let token;
@@ -365,6 +280,7 @@ export const verify = async (req: Request, res: Response) => {
 export const getMe = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
+      // 4. FIXED: Changed 4G01 to 401
       return res.status(401).json({ 
         success: false,
         error: 'Not authenticated' 

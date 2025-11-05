@@ -1,260 +1,22 @@
-// // import { ethers, Contract, JsonRpcProvider } from 'ethers';
-// // import { config } from '../config/config';
-// // import * as DocumentVerificationArtifact from '../../../artifacts/contracts/DocumentVerification.sol/DocumentVerification.json';
+// import { ethers, Contract, JsonRpcProvider, Wallet, EventLog, ContractTransactionResponse } from 'ethers';
+// import { config } from '../config/config'; // Your config loader
 
-// // const DOCUMENT_VERIFICATION_ABI = DocumentVerificationArtifact.abi;
-
-// // export interface DocumentStats {
-// //   totalDocuments: number;
-// //   verifiedDocuments: number;
-// //   pendingDocuments: number;
-// //   revokedDocuments: number;
-// //   totalVerifications: number;
-// // }
-
-// // export interface DocumentDetails {
-// //   documentHash: string;
-// //   issuer: string;
-// //   issuerName: string;
-// //   documentType: string;
-// //   recipientName: string;
-// //   recipientId: string;
-// //   issuanceDate: Date;
-// //   expirationDate: Date | null;
-// //   isActive: boolean;
-// //   isRevoked: boolean;
-// //   transactionHash: string;
-// //   blockNumber: number;
-// // }
-
-// // class BlockchainService {
-// //   private provider: JsonRpcProvider;
-// //   private contract: Contract;
-
-// //   constructor() {
-// //     this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
-// //     this.contract = new Contract(
-// //       config.contractAddress,
-// //       DOCUMENT_VERIFICATION_ABI,
-// //       this.provider
-// //     );
-// //     console.log('✅ Blockchain service initialized');
-// //     console.log('📝 Contract address:', config.contractAddress);
-// //     console.log('🌐 RPC URL:', config.rpcUrl);
-// //   }
-
-// //   /**
-// //    * Check if an address is a verified institution
-// //    */
-// //   public async isInstitutionVerified(address: string): Promise<boolean> {
-// //     try {
-// //       console.log(`🔍 Checking institution status for: ${address}`);
-// //       const isVerified = await this.contract.isInstitutionVerified(address);
-// //       console.log(`   -> Institution verified: ${isVerified}`);
-// //       return isVerified;
-// //     } catch (error) {
-// //       console.error(`❌ Error checking institution status:`, error);
-// //       return false;
-// //     }
-// //   }
-
-// //   /**
-// //    * Get comprehensive document statistics for a user
-// //    * Supports both institute (issuer) and individual (recipient) views
-// //    */
-// //   public async getDocumentStats(userAddress: string, role: 'institute' | 'individual' = 'institute'): Promise<DocumentStats> {
-// //     try {
-// //       console.log(`📊 Fetching document stats for ${role}: ${userAddress}`);
-      
-// //       if (role === 'institute') {
-// //         return await this.getIssuerStats(userAddress);
-// //       } else {
-// //         return await this.getRecipientStats(userAddress);
-// //       }
-// //     } catch (error) {
-// //       console.error(`❌ Error fetching document stats:`, error);
-// //       return {
-// //         totalDocuments: 0,
-// //         verifiedDocuments: 0,
-// //         pendingDocuments: 0,
-// //         revokedDocuments: 0,
-// //         totalVerifications: 0
-// //       };
-// //     }
-// //   }
-
-// //   /**
-// //    * Get stats for document issuer (institution)
-// //    */
-// //   private async getIssuerStats(issuerAddress: string): Promise<DocumentStats> {
-// //     try {
-// //       // Get all issued documents
-// //       const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
-// //       const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest');
-      
-// //       // Get all revoked documents
-// //       const revokeFilter = this.contract.filters.DocumentRevoked(null, issuerAddress);
-// //       const revokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
-
-// //       // Get verification events (documents that were verified by others)
-// //       const verificationFilter = this.contract.filters.DocumentVerified();
-// //       const allVerificationEvents = await this.contract.queryFilter(verificationFilter, 0, 'latest');
-      
-// //       // Filter verifications for documents issued by this institution
-// //       const issuedDocumentHashes = new Set(issuedEvents.map(e => e.args?.documentHash));
-// //       const verificationsForThisIssuer = allVerificationEvents.filter(
-// //         e => issuedDocumentHashes.has(e.args?.documentHash)
-// //       );
-
-// //       // Create sets for efficient lookup
-// //       const revokedHashes = new Set(revokedEvents.map(e => e.args?.documentHash));
-      
-// //       // Calculate stats
-// //       const totalDocuments = issuedEvents.length;
-// //       const revokedDocuments = revokedEvents.length;
-// //       const verifiedDocuments = totalDocuments - revokedDocuments; // Active documents
-// //       const pendingDocuments = 0; // For now, all issued docs are either active or revoked
-// //       const totalVerifications = verificationsForThisIssuer.length;
-
-// //       console.log(`   ✅ Stats: Total=${totalDocuments}, Verified=${verifiedDocuments}, Revoked=${revokedDocuments}, Verifications=${totalVerifications}`);
-
-// //       return {
-// //         totalDocuments,
-// //         verifiedDocuments,
-// //         pendingDocuments,
-// //         revokedDocuments,
-// //         totalVerifications
-// //       };
-// //     } catch (error) {
-// //       console.error('❌ Error getting issuer stats:', error);
-// //       throw error;
-// //     }
-// //   }
-
-// //   /**
-// //    * Get stats for document recipient (individual)
-// //    */
-// //   private async getRecipientStats(recipientAddress: string): Promise<DocumentStats> {
-// //     try {
-// //       // Get all documents issued to this address
-// //       // This requires the contract to emit events with recipient address
-// //       // Assuming you have a way to filter by recipient (might need contract modification)
-      
-// //       // For now, we'll return placeholder stats
-// //       // You'd need to implement recipient-specific logic based on your contract
-      
-// //       return {
-// //         totalDocuments: 0,
-// //         verifiedDocuments: 0,
-// //         pendingDocuments: 0,
-// //         revokedDocuments: 0,
-// //         totalVerifications: 0
-// //       };
-// //     } catch (error) {
-// //       console.error('❌ Error getting recipient stats:', error);
-// //       throw error;
-// //     }
-// //   }
-
-// //   /**
-// //    * Get list of all documents issued by an institution
-// //    */
-// //   public async getIssuedDocuments(issuerAddress: string, limit: number = 10, offset: number = 0): Promise<DocumentDetails[]> {
-// //     try {
-// //       console.log(`📄 Fetching issued documents for: ${issuerAddress}`);
-      
-// //       const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
-// //       const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest');
-      
-// //       // Get revoked document hashes
-// //       const revokeFilter = this.contract.filters.DocumentRevoked(null, issuerAddress);
-// //       const revokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
-// //       const revokedHashes = new Set(revokedEvents.map(e => e.args?.documentHash));
-
-// //       // Process events with pagination
-// //       const paginatedEvents = issuedEvents.slice(offset, offset + limit);
-      
-// //       const documents: DocumentDetails[] = await Promise.all(
-// //         paginatedEvents.map(async (event) => {
-// //           const documentHash = event.args?.documentHash;
-// //           const isRevoked = revokedHashes.has(documentHash);
-          
-// //           // Get document details from contract
-// //           try {
-// //             const docDetails = await this.contract.documents(documentHash);
-            
-// //             return {
-// //               documentHash,
-// //               issuer: event.args?.issuer || issuerAddress,
-// //               issuerName: docDetails.issuerName || 'Unknown',
-// //               documentType: event.args?.documentType || docDetails.documentType || 'Unknown',
-// //               recipientName: event.args?.recipientName || docDetails.recipientName || 'Unknown',
-// //               recipientId: docDetails.recipientId || '',
-// //               issuanceDate: new Date(event.args?.issuanceDate?.toNumber() * 1000 || Date.now()),
-// //               expirationDate: docDetails.expirationDate?.toNumber() > 0 
-// //                 ? new Date(docDetails.expirationDate.toNumber() * 1000) 
-// //                 : null,
-// //               isActive: !isRevoked,
-// //               isRevoked,
-// //               transactionHash: event.transactionHash,
-// //               blockNumber: event.blockNumber
-// //             };
-// //           } catch (error) {
-// //             console.error(`Error fetching details for document ${documentHash}:`, error);
-// //             return {
-// //               documentHash,
-// //               issuer: issuerAddress,
-// //               issuerName: 'Unknown',
-// //               documentType: 'Unknown',
-// //               recipientName: 'Unknown',
-// //               recipientId: '',
-// //               issuanceDate: new Date(),
-// //               expirationDate: null,
-// //               isActive: !isRevoked,
-// //               isRevoked,
-// //               transactionHash: event.transactionHash,
-// //               blockNumber: event.blockNumber
-// //             };
-// //           }
-// //         })
-// //       );
-
-// //       console.log(`   ✅ Found ${documents.length} documents`);
-// //       return documents;
-// //     } catch (error) {
-// //       console.error('❌ Error getting issued documents:', error);
-// //       return [];
-// //     }
-// //   }
-
-// //   /**
-// //    * Get contract statistics (admin view)
-// //    */
-// //   public async getContractStats() {
-// //     try {
-// //       const totalDocs = await this.contract.getTotalDocuments();
-// //       const totalInstitutions = await this.contract.getTotalInstitutions();
-      
-// //       return {
-// //         totalDocuments: totalDocs.toNumber(),
-// //         totalInstitutions: totalInstitutions.toNumber()
-// //       };
-// //     } catch (error) {
-// //       console.error('❌ Error getting contract stats:', error);
-// //       return {
-// //         totalDocuments: 0,
-// //         totalInstitutions: 0
-// //       };
-// //     }
-// //   }
-// // }
-
-// // export const blockchainService = new BlockchainService();
-
-
-// import { ethers, Contract, JsonRpcProvider } from 'ethers';
-// import { config } from '../config/config';
-// import * as DocumentVerificationArtifact from '../../../artifacts/contracts/DocumentVerification.sol/DocumentVerification.json';
+// // Try to import the artifact, with fallback for Docker environment
+// let DocumentVerificationArtifact: any;
+// try {
+//   // 1. FIXED: Corrected path from ../../../../ to ../../../
+//   DocumentVerificationArtifact = require('../../../artifacts/contracts/DocumentVerification.sol/DocumentVerification.json');
+// } catch (e) {
+//   try {
+//     // Try to load empty artifact as fallback
+//     DocumentVerificationArtifact = require('../empty-artifact.json');
+//     console.warn('⚠️  Could not load contract artifact, using empty ABI');
+//   } catch (fallbackError) {
+//     // If even the fallback fails, use an empty object
+//     DocumentVerificationArtifact = { abi: [] };
+//     console.warn('⚠️  Could not load contract artifact or fallback, using empty ABI');
+//   }
+// }
 
 // const DOCUMENT_VERIFICATION_ABI = DocumentVerificationArtifact.abi;
 
@@ -271,6 +33,7 @@
 //   issuer: string;
 //   issuerName: string;
 //   documentType: string;
+//   title: string;
 //   recipientName: string;
 //   recipientId: string;
 //   issuanceDate: Date;
@@ -282,24 +45,55 @@
 //   blockNumber: number;
 // }
 
+// // 2. NEW INTERFACE FOR ADMIN FUNCTION
+// export interface InstitutionDetails {
+//   name: string;
+//   registrationNumber: string;
+//   contactInfo: string;
+//   isVerified: boolean;
+//   registrationDate: string; // Converted to string for JSON
+// }
+
 // class BlockchainService {
 //   private provider: JsonRpcProvider;
-//   private contract: Contract;
+//   private contract: Contract; // Read-only contract
+//   private adminSigner: Wallet; // 3. NEW: Admin signer for writing
+//   private adminContract: Contract; // 4. NEW: Contract instance for admin
 
 //   constructor() {
 //     this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
+    
+//     // 5. KEPT: Your read-only contract
 //     this.contract = new Contract(
 //       config.contractAddress,
 //       DOCUMENT_VERIFICATION_ABI,
 //       this.provider
 //     );
+
+//     // 6. NEW: Setup admin signer and write-capable contract
+//     // This requires ADMIN_PRIVATE_KEY in your .env
+//     if (!config.adminPrivateKey) {
+//       console.warn('⚠️  ADMIN_PRIVATE_KEY not set. Admin write operations will fail.');
+//       // Create a dummy signer to avoid crashing, but it won't work
+//       this.adminSigner = new Wallet(ethers.id('dummy'), this.provider);
+//     } else {
+//       this.adminSigner = new Wallet(config.adminPrivateKey, this.provider);
+//     }
+
+//     this.adminContract = new Contract(
+//       config.contractAddress,
+//       DOCUMENT_VERIFICATION_ABI,
+//       this.adminSigner
+//     );
+
+
 //     console.log('✅ Blockchain service initialized');
 //     console.log('📝 Contract address:', config.contractAddress);
+//     console.log('👑 Admin address:', this.adminSigner.address);
 //   }
 
-//   /**
-//    * Check if an address is a verified institution
-//    */
+//   // --- Public/User Functions (Your Existing Logic, Cleaned Up) ---
+
 //   public async isInstitutionVerified(address: string): Promise<boolean> {
 //     try {
 //       const isVerified = await this.contract.isInstitutionVerified(address);
@@ -310,21 +104,16 @@
 //     }
 //   }
 
-//   /**
-//    * Get comprehensive document statistics for an issuer
-//    */
 //   public async getDocumentStats(issuerAddress: string): Promise<DocumentStats> {
 //     try {
 //       console.log(`📊 Fetching stats for issuer: ${issuerAddress}`);
       
-//       // Normalize address to lowercase for comparison
 //       const normalizedAddress = issuerAddress.toLowerCase();
 
-//       // Get all DocumentIssued events for this issuer
 //       const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
-//       const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest');
+//       const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest') as EventLog[];
       
-//       console.log(`   📄 Found ${issuedEvents.length} issued documents`);
+//       console.log(`  📄 Found ${issuedEvents.length} issued documents`);
 
 //       if (issuedEvents.length === 0) {
 //         return {
@@ -336,40 +125,30 @@
 //         };
 //       }
 
-//       // Get document hashes
-//       const documentHashes = issuedEvents.map(e => e.args?.documentHash).filter(Boolean);
-      
-//       // Get revoked documents
+//       const documentHashes = issuedEvents.map(e => e.args?.documentHash).filter(Boolean) as string[];
+
 //       const revokeFilter = this.contract.filters.DocumentRevoked();
-//       const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
+//       const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest') as EventLog[];
+      
 //       const revokedByThisIssuer = allRevokedEvents.filter(e => 
 //         e.args?.issuer?.toLowerCase() === normalizedAddress
 //       );
-//       const revokedHashes = new Set(revokedByThisIssuer.map(e => e.args?.documentHash));
 
-//       // Get verification events
-//       // Note: You may need to add a DocumentVerified event in your contract
-//       // For now, we'll check document status from contract
+//       const revokedHashes = new Set(revokedByThisIssuer.map(e => e.args?.documentHash).filter(Boolean) as string[]);
+
 //       let verifiedCount = 0;
-//       let expiredCount = 0;
 
-//       // Check each document's status
 //       for (const hash of documentHashes) {
 //         try {
 //           const doc = await this.contract.documents(hash);
-          
-//           // Check if document is still valid (not revoked and not expired)
 //           const isRevoked = revokedHashes.has(hash);
-//           const isExpired = doc.expirationDate && doc.expirationDate.toNumber() > 0 
-//             ? new Date(doc.expirationDate.toNumber() * 1000) < new Date()
-//             : false;
+
+//           // 7. FIXED: Use Number() to convert bigint
+//           const expDate = Number(doc.expirationDate);
+//           const isExpired = expDate > 0 ? new Date(expDate * 1000) < new Date() : false;
 
 //           if (!isRevoked && !isExpired && doc.isActive) {
 //             verifiedCount++;
-//           }
-          
-//           if (isExpired) {
-//             expiredCount++;
 //           }
 //         } catch (error) {
 //           console.error(`Error checking document ${hash}:`, error);
@@ -379,20 +158,14 @@
 //       const totalDocuments = issuedEvents.length;
 //       const revokedDocuments = revokedHashes.size;
 //       const verifiedDocuments = verifiedCount;
-//       const pendingDocuments = totalDocuments - verifiedCount - revokedDocuments;
-
-//       console.log(`   ✅ Stats calculated:`);
-//       console.log(`      Total: ${totalDocuments}`);
-//       console.log(`      Verified: ${verifiedDocuments}`);
-//       console.log(`      Pending: ${pendingDocuments}`);
-//       console.log(`      Revoked: ${revokedDocuments}`);
+//       const pendingDocuments = totalDocuments - verifiedCount - revokedDocuments; 
 
 //       return {
 //         totalDocuments,
 //         verifiedDocuments,
-//         pendingDocuments,
+//         pendingDocuments: pendingDocuments < 0 ? 0 : pendingDocuments, // Ensure non-negative
 //         revokedDocuments,
-//         totalVerifications: verifiedCount // Can be enhanced with actual verification events
+//         totalVerifications: verifiedCount
 //       };
 //     } catch (error) {
 //       console.error('❌ Error fetching document stats:', error);
@@ -406,9 +179,6 @@
 //     }
 //   }
 
-//   /**
-//    * Get list of all documents issued by an institution with full details
-//    */
 //   public async getIssuedDocuments(
 //     issuerAddress: string, 
 //     limit: number = 10, 
@@ -419,75 +189,63 @@
       
 //       const normalizedAddress = issuerAddress.toLowerCase();
 
-//       // Get issued events
 //       const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
-//       const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest');
+//       const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest') as EventLog[];
       
-//       console.log(`   Found ${issuedEvents.length} issued events`);
-
+//       console.log(`  Found ${issuedEvents.length} issued events`);
 //       if (issuedEvents.length === 0) {
 //         return [];
 //       }
 
-//       // Get revoked documents
 //       const revokeFilter = this.contract.filters.DocumentRevoked();
-//       const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
-//       const revokedByThisIssuer = allRevokedEvents.filter(e => 
-//         e.args?.issuer?.toLowerCase() === normalizedAddress
+//       const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest') as EventLog[];
+      
+//       const revokedHashes = new Set(
+//         allRevokedEvents
+//           .filter(e => e.args?.issuer?.toLowerCase() === normalizedAddress)
+//           .map(e => e.args?.documentHash)
+//           .filter(Boolean) as string[]
 //       );
-//       const revokedHashes = new Set(revokedByThisIssuer.map(e => e.args?.documentHash));
 
-//       // Apply pagination
-//       const paginatedEvents = issuedEvents.slice(offset, offset + limit);
+//       // Reverse, then slice for pagination
+//       const paginatedEvents = issuedEvents.reverse().slice(offset, offset + limit);
 
-//       // Fetch full document details for each event
 //       const documents: DocumentDetails[] = [];
 
 //       for (const event of paginatedEvents) {
 //         try {
 //           const documentHash = event.args?.documentHash;
-          
-//           if (!documentHash) {
-//             console.warn('⚠️  Event missing documentHash:', event);
-//             continue;
-//           }
+//           if (!documentHash) continue;
 
-//           // Fetch document details from contract storage
 //           const doc = await this.contract.documents(documentHash);
           
-//           console.log(`   📋 Document ${documentHash}:`, {
-//             issuerName: doc.issuerName,
-//             documentType: doc.documentType,
-//             recipientName: doc.recipientName,
-//             isActive: doc.isActive
-//           });
-
 //           const isRevoked = revokedHashes.has(documentHash);
-//           const expirationDate = doc.expirationDate && doc.expirationDate.toNumber() > 0
-//             ? new Date(doc.expirationDate.toNumber() * 1000)
-//             : null;
+          
+//           // 8. FIXED: Use Number() to convert bigint
+//           const expirationDateNum = Number(doc.expirationDate);
+//           const expirationDate = expirationDateNum > 0 ? new Date(expirationDateNum * 1000) : null;
 //           const isExpired = expirationDate ? expirationDate < new Date() : false;
 
-//           // Determine status
 //           let status: 'active' | 'verified' | 'revoked' | 'expired';
 //           if (isRevoked) {
 //             status = 'revoked';
 //           } else if (isExpired) {
 //             status = 'expired';
 //           } else if (doc.isActive) {
-//             status = 'verified'; // If document is active and not revoked, it's verified
+//             status = 'verified';
 //           } else {
-//             status = 'active'; // Newly issued but not yet verified
+//             status = 'active';
 //           }
 
 //           documents.push({
 //             documentHash,
 //             issuer: doc.issuer || issuerAddress,
 //             issuerName: doc.issuerName || 'Unknown Institution',
-//             documentType: doc.documentType || 'Unknown',
+//             documentType: doc.documentType || 'other',
+//             title: doc.title || '',
 //             recipientName: doc.recipientName || 'Unknown Recipient',
 //             recipientId: doc.recipientId || '',
-//             issuanceDate: new Date(doc.issuanceDate.toNumber() * 1000),
+//             issuanceDate: new Date(Number(doc.issuanceDate) * 1000), // 9. FIXED: Use Number()
 //             expirationDate,
 //             status,
 //             isActive: doc.isActive && !isRevoked && !isExpired,
@@ -497,26 +255,10 @@
 //           });
 //         } catch (docError) {
 //           console.error(`❌ Error fetching document details for ${event.args?.documentHash}:`, docError);
-//           // Add basic info even if detailed fetch fails
-//           documents.push({
-//             documentHash: event.args?.documentHash || '',
-//             issuer: issuerAddress,
-//             issuerName: 'Unknown Institution',
-//             documentType: event.args?.documentType || 'Unknown',
-//             recipientName: event.args?.recipientName || 'Unknown Recipient',
-//             recipientId: '',
-//             issuanceDate: new Date(),
-//             expirationDate: null,
-//             status: 'active',
-//             isActive: false,
-//             isRevoked: false,
-//             transactionHash: event.transactionHash,
-//             blockNumber: event.blockNumber
-//           });
 //         }
 //       }
 
-//       console.log(`   ✅ Returning ${documents.length} documents with full details`);
+//       console.log(`  ✅ Returning ${documents.length} documents with full details`);
 //       return documents;
 //     } catch (error) {
 //       console.error('❌ Error getting issued documents:', error);
@@ -524,23 +266,19 @@
 //     }
 //   }
 
-//   /**
-//    * Get a single document's details
-//    */
 //   public async getDocument(documentHash: string): Promise<DocumentDetails | null> {
 //     try {
 //       const doc = await this.contract.documents(documentHash);
       
-//       if (!doc.issuer || doc.issuer === ethers.constants.AddressZero) {
+//       if (!doc.issuer || doc.issuer === ethers.ZeroAddress) {
 //         return null;
 //       }
 
-//       // Check if revoked
 //       const isRevoked = await this.contract.revokedDocuments(documentHash);
       
-//       const expirationDate = doc.expirationDate && doc.expirationDate.toNumber() > 0
-//         ? new Date(doc.expirationDate.toNumber() * 1000)
-//         : null;
+//       // 10. FIXED: Use Number()
+//       const expirationDateNum = Number(doc.expirationDate);
+//       const expirationDate = expirationDateNum > 0 ? new Date(expirationDateNum * 1000) : null;
 //       const isExpired = expirationDate ? expirationDate < new Date() : false;
 
 //       let status: 'active' | 'verified' | 'revoked' | 'expired';
@@ -559,33 +297,91 @@
 //         issuer: doc.issuer,
 //         issuerName: doc.issuerName,
 //         documentType: doc.documentType,
+//         title: doc.title || '',
 //         recipientName: doc.recipientName,
 //         recipientId: doc.recipientId,
-//         issuanceDate: new Date(doc.issuanceDate.toNumber() * 1000),
-//         expirationDate,
+//         issuanceDate: new Date(Number(doc.issuanceDate) * 1000), // 11. FIXED: Use Number()
+//         expirationDate: expirationDate,
 //         status,
 //         isActive: doc.isActive && !isRevoked && !isExpired,
 //         isRevoked,
-//         transactionHash: '',
-//         blockNumber: 0
+//         transactionHash: '', // Not available from this call
+//         blockNumber: 0     // Not available from this call
 //       };
 //     } catch (error) {
 //       console.error('❌ Error getting document:', error);
 //       return null;
 //     }
 //   }
+
+//   // ====================================================================
+//   // --- NEW FUNCTIONS TO FIX ERRORS ---
+//   // ====================================================================
+
+//   /**
+//    * 12. NEW: Performs an ENS reverse lookup
+//    * Used by siweController.
+//    */
+//   public async lookupAddress(address: string): Promise<string | null> {
+//     try {
+//       // Uses the service's read-only provider to look up the name
+//       const name = await this.provider.lookupAddress(address);
+//       return name;
+//     } catch (error: any) {
+//       console.warn(`⚠️  Could not fetch ENS name for ${address}:`, error.message);
+//       return null;
+//     }
+//   }
+
+//   /**
+//    * 13. NEW: Verifies an institution on-chain. Admin only.
+//    * Uses the adminContract to send a transaction.
+//    */
+//   public async verifyInstitution(addressToVerify: string): Promise<ContractTransactionResponse> {
+//     try {
+//       console.log(`👑 ADMIN: Sending 'verifyInstitution' tx for: ${addressToVerify}`);
+//       const tx: ContractTransactionResponse = await this.adminContract.verifyInstitution(
+//         addressToVerify
+//       );
+//       return tx;
+//     } catch (error: any) {
+//       console.error(`❌ ADMIN: Failed to send 'verifyInstitution' tx:`, error.message);
+//       throw new Error(`Blockchain transaction failed: ${error.message}`);
+//     }
+//   }
+
+//   /**
+//    * 14. NEW: Gets on-chain details for an institution. Admin only.
+//    * Uses the read-only contract.
+//    */
+//   public async getInstitutionDetails(address: string): Promise<InstitutionDetails> {
+//     try {
+//       const details = await this.contract.institutions(address);
+
+//       // Convert bigint to string for safe JSON transport
+//       return {
+//         name: details.name,
+//         registrationNumber: details.registrationNumber,
+//         contactInfo: details.contactInfo,
+//         isVerified: details.isVerified,
+//         registrationDate: details.registrationDate.toString(),
+//       };
+//     } catch (error: any) {
+//       console.error('❌ ADMIN: Error getting institution details:', error.message);
+//       throw new Error(`Failed to fetch institution details: ${error.message}`);
+//     }
+//   }
 // }
 
 // export const blockchainService = new BlockchainService();
 
-
-import { ethers, Contract, JsonRpcProvider } from 'ethers';
-import { config } from '../config/config';
+import { ethers, Contract, JsonRpcProvider, Wallet, EventLog, ContractTransactionResponse } from 'ethers';
+import { config } from '../config/config'; // Your config loader
 
 // Try to import the artifact, with fallback for Docker environment
 let DocumentVerificationArtifact: any;
 try {
-  DocumentVerificationArtifact = require('../../../../artifacts/contracts/DocumentVerification.sol/DocumentVerification.json');
+  DocumentVerificationArtifact = require('../../../artifacts/contracts/DocumentVerification.sol/DocumentVerification.json');
 } catch (e) {
   try {
     // Try to load empty artifact as fallback
@@ -613,7 +409,7 @@ export interface DocumentDetails {
   issuer: string;
   issuerName: string;
   documentType: string;
-  title: string;  // ← ADDED
+  title: string;
   recipientName: string;
   recipientId: string;
   issuanceDate: Date;
@@ -625,21 +421,52 @@ export interface DocumentDetails {
   blockNumber: number;
 }
 
+// 1. ADDED 'address' to this interface
+export interface InstitutionDetails {
+  address: string;
+  name: string;
+  registrationNumber: string;
+  contactInfo: string;
+  isVerified: boolean;
+  registrationDate: string; // Converted to string for JSON
+}
+
 class BlockchainService {
   private provider: JsonRpcProvider;
-  private contract: Contract;
+  private contract: Contract; // Read-only contract
+  private adminSigner: Wallet; // Admin signer for writing
+  private adminContract: Contract; // Contract instance for admin
 
   constructor() {
     this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
+    
     this.contract = new Contract(
       config.contractAddress,
       DOCUMENT_VERIFICATION_ABI,
       this.provider
     );
+
+    if (!config.adminPrivateKey) {
+      console.warn('⚠️  ADMIN_PRIVATE_KEY not set. Admin write operations will fail.');
+      this.adminSigner = new Wallet(ethers.id('dummy'), this.provider);
+    } else {
+      this.adminSigner = new Wallet(config.adminPrivateKey, this.provider);
+    }
+
+    this.adminContract = new Contract(
+      config.contractAddress,
+      DOCUMENT_VERIFICATION_ABI,
+      this.adminSigner
+    );
+
+
     console.log('✅ Blockchain service initialized');
     console.log('📝 Contract address:', config.contractAddress);
+    console.log('👑 Admin address:', this.adminSigner.address);
   }
 
+  // --- (Your existing functions like getDocumentStats, getIssuedDocuments, etc. go here) ---
+  
   public async isInstitutionVerified(address: string): Promise<boolean> {
     try {
       const isVerified = await this.contract.isInstitutionVerified(address);
@@ -653,62 +480,25 @@ class BlockchainService {
   public async getDocumentStats(issuerAddress: string): Promise<DocumentStats> {
     try {
       console.log(`📊 Fetching stats for issuer: ${issuerAddress}`);
-      
       const normalizedAddress = issuerAddress.toLowerCase();
-
       const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
-      const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest');
-      
-      console.log(`   📄 Found ${issuedEvents.length} issued documents`);
-
+      const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest') as EventLog[];
+      console.log(`  📄 Found ${issuedEvents.length} issued documents`);
       if (issuedEvents.length === 0) {
-        return {
-          totalDocuments: 0,
-          verifiedDocuments: 0,
-          pendingDocuments: 0,
-          revokedDocuments: 0,
-          totalVerifications: 0
-        };
+        return { totalDocuments: 0, verifiedDocuments: 0, pendingDocuments: 0, revokedDocuments: 0, totalVerifications: 0 };
       }
-
-      // Fix TypeScript errors by properly handling event types
-      const documentHashes = issuedEvents.map(e => {
-        if ('args' in e) {
-          return e.args?.documentHash;
-        }
-        return undefined;
-      }).filter(Boolean) as string[];
-
+      const documentHashes = issuedEvents.map(e => e.args?.documentHash).filter(Boolean) as string[];
       const revokeFilter = this.contract.filters.DocumentRevoked();
-      const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
-      const revokedByThisIssuer = allRevokedEvents.filter(e => {
-        // Use type narrowing to check if args exists
-        if (typeof e === 'object' && e !== null && 'args' in e) {
-          const eventWithArgs = e as { args?: { issuer?: string } };
-          return eventWithArgs.args?.issuer?.toLowerCase() === normalizedAddress;
-        }
-        return false;
-      });
-
-      const revokedHashes = new Set(revokedByThisIssuer.map(e => {
-        // Use type narrowing to check if args exists
-        if (typeof e === 'object' && e !== null && 'args' in e) {
-          const eventWithArgs = e as { args?: { documentHash?: string } };
-          return eventWithArgs.args?.documentHash;
-        }
-        return undefined;
-      }).filter(Boolean) as string[]);
-
+      const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest') as EventLog[];
+      const revokedByThisIssuer = allRevokedEvents.filter(e => e.args?.issuer?.toLowerCase() === normalizedAddress);
+      const revokedHashes = new Set(revokedByThisIssuer.map(e => e.args?.documentHash).filter(Boolean) as string[]);
       let verifiedCount = 0;
-
       for (const hash of documentHashes) {
         try {
           const doc = await this.contract.documents(hash);
           const isRevoked = revokedHashes.has(hash);
-          const isExpired = doc.expirationDate && doc.expirationDate.toNumber() > 0 
-            ? new Date(doc.expirationDate.toNumber() * 1000) < new Date()
-            : false;
-
+          const expDate = Number(doc.expirationDate);
+          const isExpired = expDate > 0 ? new Date(expDate * 1000) < new Date() : false;
           if (!isRevoked && !isExpired && doc.isActive) {
             verifiedCount++;
           }
@@ -716,300 +506,89 @@ class BlockchainService {
           console.error(`Error checking document ${hash}:`, error);
         }
       }
-
       const totalDocuments = issuedEvents.length;
       const revokedDocuments = revokedHashes.size;
       const verifiedDocuments = verifiedCount;
       const pendingDocuments = totalDocuments - verifiedCount - revokedDocuments;
-
-      return {
-        totalDocuments,
-        verifiedDocuments,
-        pendingDocuments,
-        revokedDocuments,
-        totalVerifications: verifiedCount
-      };
+      return { totalDocuments, verifiedDocuments, pendingDocuments: pendingDocuments < 0 ? 0 : pendingDocuments, revokedDocuments, totalVerifications: verifiedCount };
     } catch (error) {
       console.error('❌ Error fetching document stats:', error);
-      return {
-        totalDocuments: 0,
-        verifiedDocuments: 0,
-        pendingDocuments: 0,
-        revokedDocuments: 0,
-        totalVerifications: 0
-      };
+      return { totalDocuments: 0, verifiedDocuments: 0, pendingDocuments: 0, revokedDocuments: 0, totalVerifications: 0 };
     }
   }
 
-  // public async getIssuedDocuments(
-  //   issuerAddress: string, 
-  //   limit: number = 10, 
-  //   offset: number = 0
-  // ): Promise<DocumentDetails[]> {
-  //   try {
-  //     console.log(`📄 Fetching documents for issuer: ${issuerAddress} (limit=${limit}, offset=${offset})`);
-      
-  //     const normalizedAddress = issuerAddress.toLowerCase();
-
-  //     const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
-  //     const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest');
-      
-  //     console.log(`   Found ${issuedEvents.length} issued events`);
-
-  //     if (issuedEvents.length === 0) {
-  //       return [];
-  //     }
-
-  //     const revokeFilter = this.contract.filters.DocumentRevoked();
-  //     const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
-  //     const revokedByThisIssuer = allRevokedEvents.filter(e => 
-  //       e.args?.issuer?.toLowerCase() === normalizedAddress
-  //     );
-  //     const revokedHashes = new Set(revokedByThisIssuer.map(e => e.args?.documentHash));
-
-  //     const paginatedEvents = issuedEvents.slice(offset, offset + limit);
-
-  //     const documents: DocumentDetails[] = [];
-
-  //     for (const event of paginatedEvents) {
-  //       try {
-  //         const documentHash = event.args?.documentHash;
-          
-  //         if (!documentHash) {
-  //           console.warn('⚠️  Event missing documentHash:', event);
-  //           continue;
-  //         }
-
-  //         const doc = await this.contract.documents(documentHash);
-          
-  //         console.log(`   📋 Document ${documentHash}:`, {
-  //           issuerName: doc.issuerName,
-  //           documentType: doc.documentType,
-  //           title: doc.title || 'N/A',  // ← LOG TITLE
-  //           recipientName: doc.recipientName,
-  //           isActive: doc.isActive
-  //         });
-
-  //         const isRevoked = revokedHashes.has(documentHash);
-  //         const expirationDate = doc.expirationDate && doc.expirationDate.toNumber() > 0
-  //           ? new Date(doc.expirationDate.toNumber() * 1000)
-  //           : null;
-  //         const isExpired = expirationDate ? expirationDate < new Date() : false;
-
-  //         let status: 'active' | 'verified' | 'revoked' | 'expired';
-  //         if (isRevoked) {
-  //           status = 'revoked';
-  //         } else if (isExpired) {
-  //           status = 'expired';
-  //         } else if (doc.isActive) {
-  //           status = 'verified';
-  //         } else {
-  //           status = 'active';
-  //         }
-
-  //         documents.push({
-  //           documentHash,
-  //           issuer: doc.issuer || issuerAddress,
-  //           issuerName: doc.issuerName || 'Unknown Institution',
-  //           documentType: doc.documentType || 'other',
-  //           title: doc.title || '',  // ← ADD TITLE
-  //           recipientName: doc.recipientName || 'Unknown Recipient',
-  //           recipientId: doc.recipientId || '',
-  //           issuanceDate: new Date(doc.issuanceDate.toNumber() * 1000),
-  //           expirationDate,
-  //           status,
-  //           isActive: doc.isActive && !isRevoked && !isExpired,
-  //           isRevoked,
-  //           transactionHash: event.transactionHash,
-  //           blockNumber: event.blockNumber
-  //         });
-  //       } catch (docError) {
-  //         console.error(`❌ Error fetching document details for ${event.args?.documentHash}:`, docError);
-  //         documents.push({
-  //           documentHash: event.args?.documentHash || '',
-  //           issuer: issuerAddress,
-  //           issuerName: 'Unknown Institution',
-  //           documentType: event.args?.documentType || 'other',
-  //           title: '',  // ← ADD EMPTY TITLE
-  //           recipientName: event.args?.recipientName || 'Unknown Recipient',
-  //           recipientId: '',
-  //           issuanceDate: new Date(),
-  //           expirationDate: null,
-  //           status: 'active',
-  //           isActive: false,
-  //           isRevoked: false,
-  //           transactionHash: event.transactionHash,
-  //           blockNumber: event.blockNumber
-  //         });
-  //       }
-  //     }
-
-  //     console.log(`   ✅ Returning ${documents.length} documents with full details`);
-  //     return documents;
-  //   } catch (error) {
-  //     console.error('❌ Error getting issued documents:', error);
-  //     return [];
-  //   }
-  // }
-
-  public async getIssuedDocuments(
-  issuerAddress: string, 
-  limit: number = 10, 
-  offset: number = 0
-): Promise<DocumentDetails[]> {
-  try {
-    console.log(`📄 Fetching documents for issuer: ${issuerAddress} (limit=${limit}, offset=${offset})`);
-    
-    const normalizedAddress = issuerAddress.toLowerCase();
-
-    const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
-    const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest');
-    
-    console.log(`   Found ${issuedEvents.length} issued events`);
-
-    if (issuedEvents.length === 0) {
+  public async getIssuedDocuments(issuerAddress: string, limit: number = 10, offset: number = 0): Promise<DocumentDetails[]> {
+    try {
+      console.log(`📄 Fetching documents for issuer: ${issuerAddress} (limit=${limit}, offset=${offset})`);
+      const normalizedAddress = issuerAddress.toLowerCase();
+      const issueFilter = this.contract.filters.DocumentIssued(null, issuerAddress);
+      const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest') as EventLog[];
+      console.log(`  Found ${issuedEvents.length} issued events`);
+      if (issuedEvents.length === 0) {
+        return [];
+      }
+      const revokeFilter = this.contract.filters.DocumentRevoked();
+      const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest') as EventLog[];
+      const revokedHashes = new Set(allRevokedEvents.filter(e => e.args?.issuer?.toLowerCase() === normalizedAddress).map(e => e.args?.documentHash).filter(Boolean) as string[]);
+      const paginatedEvents = issuedEvents.reverse().slice(offset, offset + limit);
+      const documents: DocumentDetails[] = [];
+      for (const event of paginatedEvents) {
+        try {
+          const documentHash = event.args?.documentHash;
+          if (!documentHash) continue;
+          const doc = await this.contract.documents(documentHash);
+          const isRevoked = revokedHashes.has(documentHash);
+          const expirationDateNum = Number(doc.expirationDate);
+          const expirationDate = expirationDateNum > 0 ? new Date(expirationDateNum * 1000) : null;
+          const isExpired = expirationDate ? expirationDate < new Date() : false;
+          let status: 'active' | 'verified' | 'revoked' | 'expired';
+          if (isRevoked) { status = 'revoked'; }
+          else if (isExpired) { status = 'expired'; }
+          else if (doc.isActive) { status = 'verified'; }
+          else { status = 'active'; }
+          documents.push({
+            documentHash,
+            issuer: doc.issuer || issuerAddress,
+            issuerName: doc.issuerName || 'Unknown Institution',
+            documentType: doc.documentType || 'other',
+            title: doc.title || '',
+            recipientName: doc.recipientName || 'Unknown Recipient',
+            recipientId: doc.recipientId || '',
+            issuanceDate: new Date(Number(doc.issuanceDate) * 1000),
+            expirationDate,
+            status,
+            isActive: doc.isActive && !isRevoked && !isExpired,
+            isRevoked,
+            transactionHash: event.transactionHash,
+            blockNumber: event.blockNumber
+          });
+        } catch (docError) {
+          console.error(`❌ Error fetching document details for ${event.args?.documentHash}:`, docError);
+        }
+      }
+      console.log(`  ✅ Returning ${documents.length} documents with full details`);
+      return documents;
+    } catch (error) {
+      console.error('❌ Error getting issued documents:', error);
       return [];
     }
-
-    const revokeFilter = this.contract.filters.DocumentRevoked();
-    const allRevokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest');
-    const revokedByThisIssuer = allRevokedEvents.filter(e => {
-      // Check if the event has args property
-      if (Object.prototype.hasOwnProperty.call(e, 'args')) {
-        const event: any = e;
-        return event.args?.issuer?.toLowerCase() === normalizedAddress;
-      }
-      return false;
-    });
-
-    const revokedHashes = new Set(revokedByThisIssuer.map(e => {
-      // Check if the event has args property
-      if (Object.prototype.hasOwnProperty.call(e, 'args')) {
-        const event: any = e;
-        return event.args?.documentHash;
-      }
-      return undefined;
-    }).filter(Boolean) as string[]);
-
-    const paginatedEvents = issuedEvents.slice(offset, offset + limit);
-
-    const documents: DocumentDetails[] = [];
-
-    for (const event of paginatedEvents) {
-      try {
-        // Properly handle event args
-        let documentHash: string | undefined;
-        if ('args' in event) {
-          documentHash = event.args?.documentHash;
-        }
-
-        if (!documentHash) {
-          console.warn('⚠️  Event missing documentHash:', event);
-          continue;
-        }
-
-        const doc = await this.contract.documents(documentHash);
-        
-        console.log(`   📋 Document ${documentHash}:`, {
-          issuerName: doc.issuerName,
-          documentType: doc.documentType,
-          title: doc.title || 'N/A',
-          recipientName: doc.recipientName,
-          isActive: doc.isActive
-        });
-
-        const isRevoked = revokedHashes.has(documentHash);
-        
-        // ← FIXED: Use Number() instead of .toNumber()
-        const expirationDate = doc.expirationDate && Number(doc.expirationDate) > 0
-          ? new Date(Number(doc.expirationDate) * 1000)
-          : null;
-        const isExpired = expirationDate ? expirationDate < new Date() : false;
-
-        let status: 'active' | 'verified' | 'revoked' | 'expired';
-        if (isRevoked) {
-          status = 'revoked';
-        } else if (isExpired) {
-          status = 'expired';
-        } else if (doc.isActive) {
-          status = 'verified';
-        } else {
-          status = 'active';
-        }
-
-        documents.push({
-          documentHash,
-          issuer: doc.issuer || issuerAddress,
-          issuerName: doc.issuerName || 'Unknown Institution',
-          documentType: doc.documentType || 'other',
-          title: doc.title || '',
-          recipientName: doc.recipientName || 'Unknown Recipient',
-          recipientId: doc.recipientId || '',
-          issuanceDate: new Date(Number(doc.issuanceDate) * 1000),  // ← FIXED
-          expirationDate,
-          status,
-          isActive: doc.isActive && !isRevoked && !isExpired,
-          isRevoked,
-          transactionHash: event.transactionHash,
-          blockNumber: event.blockNumber
-        });
-      } catch (docError) {
-        console.error(`❌ Error fetching document details:`, docError);
-        // Remove references to event.args in error handling
-        documents.push({
-          documentHash: '',
-          issuer: issuerAddress,
-          issuerName: 'Unknown Institution',
-          documentType: 'other',
-          title: '',
-          recipientName: 'Unknown Recipient',
-          recipientId: '',
-          issuanceDate: new Date(),
-          expirationDate: null,
-          status: 'active',
-          isActive: false,
-          isRevoked: false,
-          transactionHash: event.transactionHash,
-          blockNumber: event.blockNumber
-        });
-      }
-    }
-
-    console.log(`   ✅ Returning ${documents.length} documents with full details`);
-    return documents;
-  } catch (error) {
-    console.error('❌ Error getting issued documents:', error);
-    return [];
   }
-}
 
   public async getDocument(documentHash: string): Promise<DocumentDetails | null> {
     try {
       const doc = await this.contract.documents(documentHash);
-      
-      if (!doc.issuer || doc.issuer === "0x0000000000000000000000000000000000000000") {
+      if (!doc.issuer || doc.issuer === ethers.ZeroAddress) {
         return null;
       }
-
       const isRevoked = await this.contract.revokedDocuments(documentHash);
-      
-      // Fix the args property access
-      const expirationDate = doc.expirationDate && Number(doc.expirationDate) > 0
-        ? new Date(Number(doc.expirationDate) * 1000)
-        : null;
+      const expirationDateNum = Number(doc.expirationDate);
+      const expirationDate = expirationDateNum > 0 ? new Date(expirationDateNum * 1000) : null;
       const isExpired = expirationDate ? expirationDate < new Date() : false;
-
       let status: 'active' | 'verified' | 'revoked' | 'expired';
-      if (isRevoked) {
-        status = 'revoked';
-      } else if (isExpired) {
-        status = 'expired';
-      } else if (doc.isActive) {
-        status = 'verified';
-      } else {
-        status = 'active';
-      }
-
+      if (isRevoked) { status = 'revoked'; }
+      else if (isExpired) { status = 'expired'; }
+      else if (doc.isActive) { status = 'verified'; }
+      else { status = 'active'; }
       return {
         documentHash,
         issuer: doc.issuer,
@@ -1019,9 +598,7 @@ class BlockchainService {
         recipientName: doc.recipientName,
         recipientId: doc.recipientId,
         issuanceDate: new Date(Number(doc.issuanceDate) * 1000),
-        expirationDate: Number(doc.expirationDate) > 0
-          ? new Date(Number(doc.expirationDate) * 1000)
-          : null,
+        expirationDate: expirationDate,
         status,
         isActive: doc.isActive && !isRevoked && !isExpired,
         isRevoked,
@@ -1031,6 +608,97 @@ class BlockchainService {
     } catch (error) {
       console.error('❌ Error getting document:', error);
       return null;
+    }
+  }
+
+  // ====================================================================
+  // --- NEW/UPDATED FUNCTIONS FOR ADMIN PANEL ---
+  // ====================================================================
+
+  /**
+   * 2. NEW: This function gets the list *directly from the blockchain*.
+   * It loops the on-chain array, which is the "source of truth".
+   */
+  public async getAllInstitutionsFromChain(): Promise<InstitutionDetails[]> {
+    try {
+      console.log('Fetching all institutions from blockchain...');
+      // Calls getTotalInstitutions() from contract
+      const totalBigInt = await this.contract.getTotalInstitutions();
+      const total = Number(totalBigInt);
+      console.log(`Found ${total} institutions on-chain.`);
+
+      const institutions: InstitutionDetails[] = [];
+      
+      for (let i = 0; i < total; i++) {
+        try {
+          // Calls institutionAddresses(i) from contract
+          const address = await this.contract.institutionAddresses(i);
+          // Calls our existing getInstitutionDetails function
+          const details = await this.getInstitutionDetails(address);
+          institutions.push(details);
+        } catch (e) {
+          console.error(`Failed to fetch institute at index ${i}`, e);
+        }
+      }
+      return institutions;
+    } catch (error: any) {
+      console.error('❌ Error getting all institutions from chain:', error.message);
+      throw new Error(`Failed to fetch institutions from chain: ${error.message}`);
+    }
+  }
+
+  /**
+   * Performs an ENS reverse lookup
+   * Used by siweController.
+   */
+  public async lookupAddress(address: string): Promise<string | null> {
+    try {
+      // Uses the service's read-only provider to look up the name
+      const name = await this.provider.lookupAddress(address);
+      return name;
+    } catch (error: any) {
+      console.warn(`⚠️  Could not fetch ENS name for ${address}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Verifies an institution on-chain. Admin only.
+   * Uses the adminContract to send a transaction.
+   */
+  public async verifyInstitution(addressToVerify: string): Promise<ContractTransactionResponse> {
+    try {
+      console.log(`👑 ADMIN: Sending 'verifyInstitution' tx for: ${addressToVerify}`);
+      const tx: ContractTransactionResponse = await this.adminContract.verifyInstitution(
+        addressToVerify
+      );
+      return tx;
+    } catch (error: any) {
+      console.error(`❌ ADMIN: Failed to send 'verifyInstitution' tx:`, error.message);
+      throw new Error(`Blockchain transaction failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * 3. UPDATED: Gets on-chain details and now includes the address.
+   */
+  public async getInstitutionDetails(address: string): Promise<InstitutionDetails> {
+    try {
+      // Calls institutions(address) mapping
+      const details = await this.contract.institutions(address);
+
+      // Convert bigint to string for safe JSON transport
+      return {
+        address: address, // <-- 4. FIXED: Added the address
+        name: details.name,
+        registrationNumber: details.registrationNumber,
+        contactInfo: details.contactInfo,
+        isVerified: details.isVerified,
+        registrationDate: details.registrationDate.toString(),
+      };
+    } catch (error: any) {
+      console.error('❌ ADMIN: Error getting institution details:', error.message);
+      throw new Error(`Failed to fetch institution details: ${error.message}`);
     }
   }
 }

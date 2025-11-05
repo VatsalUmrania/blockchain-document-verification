@@ -1,34 +1,3 @@
-// import { Request, Response, NextFunction } from 'express';
-// import { verifyToken } from '../utils/jwt';
-// import User from '../models/User';
-
-// export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-//   const authHeader = req.headers.authorization;
-
-//   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-//     return res.status(401).json({ error: 'Authorization token required' });
-//   }
-
-//   const token = authHeader.split(' ')[1];
-
-//   try {
-//     const decoded = verifyToken(token) as { id: string; address: string; role: string };
-    
-//     // Find the user in MongoDB by their ID from the token
-//     const user = await User.findById(decoded.id);
-
-//     if (!user) {
-//       return res.status(401).json({ error: 'User not found' });
-//     }
-    
-//     // Attach user information to the request object
-//     req.user = decoded;
-//     next();
-//   } catch (error) {
-//     return res.status(401).json({ error: 'Invalid or expired token' });
-//   }
-// };
-
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
 import User, { UserRole } from '../models/User';
@@ -165,10 +134,11 @@ export const requireInstitute = (req: Request, res: Response, next: NextFunction
   if (req.user.role !== UserRole.INSTITUTE) {
     return res.status(403).json({ 
       success: false,
-      error: 'Only verified institutions can access this resource',
+      error: 'Only verified institutions and individuals can access this resource',
       currentRole: req.user.role
-    });
-  }
+  });
+}
+
 
   next();
 };
@@ -189,6 +159,32 @@ export const requireIndividual = (req: Request, res: Response, next: NextFunctio
     return res.status(403).json({ 
       success: false,
       error: 'This resource is only accessible to individuals',
+      currentRole: req.user.role
+    });
+  }
+
+  next();
+};
+
+// ====================================================================
+// 4. ADDED THIS NEW MIDDLEWARE
+// ====================================================================
+/**
+ * Middleware specifically for admin-only routes
+ * Usage: app.post('/admin/verify', authMiddleware, requireAdmin, handler)
+ */
+export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      success: false,
+      error: 'Authentication required' 
+    });
+  }
+
+  if (req.user.role !== UserRole.ADMIN) {
+    return res.status(403).json({ 
+      success: false,
+      error: 'Administrator access only',
       currentRole: req.user.role
     });
   }
@@ -293,7 +289,7 @@ export const requireSelfOrRole = (...roles: UserRole[]) => {
     const hasRole = roles.includes(req.user.role as UserRole);
 
     if (!isSelf && !hasRole) {
-      return res.status(403).json({ 
+      return res.status(4403).json({ 
         success: false,
         error: 'Insufficient permissions',
         required: roles,
@@ -350,6 +346,7 @@ export default {
   requireRole,
   requireInstitute,
   requireIndividual,
+  requireAdmin, // 5. ADDED to export
   optionalAuth,
   requireSelf,
   requireSelfOrRole,

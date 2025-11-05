@@ -1,13 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* ================================
-   THEME SYSTEM - CSS Custom Properties
+   BLOCKCHAIN THEME SYSTEM - CSS Custom Properties
    ================================ */
-
 :root {
-  /* Color System */
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Original Color System */
   --color-primary: 41 108 255; /* #296CFF */
   --color-primary-hover: 41 121 255; /* #2979FF */
   --color-success: 0 200 83; /* #00C853 */
@@ -16,6 +29,7 @@
   --color-warning: 255 152 0; /* #FF9800 */
   
   /* Spacing & Sizing */
+  --radius: 0.75rem;
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
@@ -44,12 +58,8 @@
   --z-popover: 1050;
   --z-tooltip: 1060;
   --z-toast: 9999;
-}
 
-/* ================================
-   DARK THEME (Default)
-   ================================ */
-:root {
+  /* DARK THEME (Default) */
   /* Background Colors */
   --bg-primary: 13 13 13; /* #0D0D0D - Main background */
   --bg-secondary: 26 26 26; /* #1A1A1A - Cards, modals */
@@ -83,11 +93,100 @@
   --scrollbar-track: var(--bg-tertiary);
   --scrollbar-thumb: var(--color-primary);
   --scrollbar-thumb-hover: var(--color-primary-hover);
+
+  /* Shadcn Integration */
+  --background: var(--bg-primary);
+  --foreground: var(--text-primary);
+  --card: var(--bg-secondary);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-secondary);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--color-primary);
+  --primary-foreground: 255 255 255;
+  --secondary: var(--bg-tertiary);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-tertiary);
+  --muted-foreground: var(--text-tertiary);
+  --accent: var(--bg-accent);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--color-error);
+  --destructive-foreground: 255 255 255;
+  --border: var(--border-primary);
+  --input: var(--bg-tertiary);
+  --ring: var(--color-primary);
+  --chart-1: var(--color-primary);
+  --chart-2: var(--color-success);
+  --chart-3: var(--color-error);
+  --chart-4: var(--color-warning);
+  --chart-5: 138 43 226;
+  --sidebar: var(--bg-secondary);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--color-primary);
+  --sidebar-primary-foreground: 255 255 255;
+  --sidebar-accent: var(--bg-tertiary);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border-primary);
+  --sidebar-ring: var(--color-primary);
 }
 
-/* ================================
-   LIGHT THEME
-   ================================ */
+a {
+  font-weight: 500;
+  color: rgb(var(--color-primary));
+  text-decoration: inherit;
+  transition: color var(--transition-normal);
+}
+a:hover {
+  color: rgb(var(--color-primary-hover));
+}
+
+/* FIXED: Remove the problematic flexbox layout from body */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  width: 100%;
+}
+
+body {
+  /* REMOVED: display: flex; place-items: center; */
+  /* These were causing the layout centering issues */
+  min-width: 320px;
+  font-family: inherit;
+}
+
+/* Ensure React root takes full space */
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: rgb(var(--bg-tertiary));
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+button:hover {
+  border-color: rgb(var(--color-primary));
+  box-shadow: var(--shadow-md);
+}
+button:focus,
+button:focus-visible {
+  outline: 2px solid rgb(var(--color-primary) / 0.5);
+  outline-offset: 2px;
+}
+
+/* LIGHT THEME */
 [data-theme="light"] {
   /* Background Colors */
   --bg-primary: 255 255 255; /* #FFFFFF - Main background */
@@ -130,12 +229,56 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
 }
 
-/* ================================
-   BASE STYLES
-   ================================ */
+/* Dark class for theme switching */
+.dark {
+  /* Keep dark theme values as default */
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-md: calc(var(--radius) - 0.125rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+  --color-background: rgb(var(--background));
+  --color-foreground: rgb(var(--foreground));
+  --color-card: rgb(var(--card));
+  --color-card-foreground: rgb(var(--card-foreground));
+  --color-popover: rgb(var(--popover));
+  --color-popover-foreground: rgb(var(--popover-foreground));
+  --color-primary: rgb(var(--primary));
+  --color-primary-foreground: rgb(var(--primary-foreground));
+  --color-secondary: rgb(var(--secondary));
+  --color-secondary-foreground: rgb(var(--secondary-foreground));
+  --color-muted: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+  --color-accent: rgb(var(--accent));
+  --color-accent-foreground: rgb(var(--accent-foreground));
+  --color-destructive: rgb(var(--destructive));
+  --color-destructive-foreground: rgb(var(--destructive-foreground));
+  --color-border: rgb(var(--border));
+  --color-input: rgb(var(--input));
+  --color-ring: rgb(var(--ring));
+  --color-chart-1: rgb(var(--chart-1));
+  --color-chart-2: rgb(var(--chart-2));
+  --color-chart-3: rgb(var(--chart-3));
+  --color-chart-4: rgb(var(--chart-4));
+  --color-chart-5: rgb(var(--chart-5));
+  --color-sidebar: rgb(var(--sidebar));
+  --color-sidebar-foreground: rgb(var(--sidebar-foreground));
+  --color-sidebar-primary: rgb(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: rgb(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: rgb(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: rgb(var(--sidebar-accent-foreground));
+  --color-sidebar-border: rgb(var(--sidebar-border));
+  --color-sidebar-ring: rgb(var(--sidebar-ring));
+}
+
 @layer base {
   * {
-    @apply border-border;
+    border-color: rgb(var(--border-primary));
+    transition-property: background-color, border-color, color, box-shadow;
+    transition-duration: var(--transition-normal);
+    transition-timing-function: ease;
   }
   
   html, body, #root {
@@ -144,10 +287,20 @@
     min-height: 100vh;
     margin: 0;
     padding: 0;
+    width: 100%;
   }
   
   body {
     transition: background-color var(--transition-normal), color var(--transition-normal);
+    /* FIXED: Proper layout instead of flexbox centering */
+    display: block;
+    font-family: inherit;
+  }
+  
+  /* Ensure proper layout flow */
+  main {
+    width: 100%;
+    min-height: 100vh;
   }
 }
 
@@ -157,13 +310,19 @@
 @layer components {
   /* Button System */
   .btn-base {
-    @apply font-semibold py-3 px-6 rounded-xl transition-all;
-    transition-duration: var(--transition-slow);
-    @apply transform hover:-translate-y-0.5 hover:scale-105;
+    font-weight: var(--font-weight-semibold);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-xl);
+    transition: all var(--transition-slow);
+    transform: scale(1);
+  }
+  
+  .btn-base:hover {
+    transform: translateY(-0.125rem) scale(1.05);
   }
   
   .btn-primary {
-    @apply btn-base text-white;
+    color: white;
     background: rgb(var(--color-primary));
     border: 1px solid rgb(var(--color-primary) / 0.5);
     box-shadow: var(--shadow-lg), 0 0 0 rgb(var(--color-primary) / 0.3);
@@ -176,7 +335,6 @@
   }
   
   .btn-secondary {
-    @apply btn-base;
     background: rgb(var(--surface-primary));
     color: rgb(var(--text-primary));
     border: 1px solid rgb(var(--border-primary));
@@ -190,7 +348,7 @@
   }
   
   .btn-success {
-    @apply btn-base text-white;
+    color: white;
     background: rgb(var(--color-success));
     border: 1px solid rgb(var(--color-success) / 0.5);
     box-shadow: var(--shadow-lg), 0 0 0 rgb(var(--color-success) / 0.3);
@@ -207,8 +365,9 @@
     background: rgb(var(--surface-primary));
     color: rgb(var(--text-primary));
     border: 1px solid rgb(var(--border-primary));
-    @apply rounded-2xl p-6 transition-all;
-    transition-duration: var(--transition-slow);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    transition: all var(--transition-slow);
     box-shadow: var(--shadow-xl);
   }
   
@@ -221,17 +380,32 @@
   .card-stats {
     background: linear-gradient(135deg, rgb(var(--surface-primary)), rgb(var(--surface-secondary)));
     border: 1px solid rgb(var(--color-primary));
-    @apply rounded-2xl p-6 transition-all;
-    transition-duration: var(--transition-slow);
-    @apply transform hover:scale-105;
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    transition: all var(--transition-slow);
+    transform: scale(1);
     box-shadow: var(--shadow-lg), 0 0 10px rgb(var(--color-primary) / 0.3);
   }
   
   .card-stats:hover {
     border-color: rgb(var(--color-primary-hover));
     box-shadow: var(--shadow-xl), 0 0 25px rgb(var(--color-primary) / 0.4);
+    transform: scale(1.05);
+  }
+
+  /* Layout Utilities */
+  .dashboard-container {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0;
+    max-width: none;
   }
   
+  .dashboard-content {
+    display: block;
+    width: 100%;
+  }
+
   /* Status Cards */
   .card-verified {
     background: rgb(var(--status-success-bg));
@@ -255,11 +429,13 @@
   
   /* Input System */
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl transition-all;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-xl);
     background: rgb(var(--surface-secondary));
     color: rgb(var(--text-primary));
     border: 1px solid rgb(var(--border-primary));
-    transition-duration: var(--transition-normal);
+    transition: all var(--transition-normal);
   }
   
   .input-field::placeholder {
@@ -290,13 +466,17 @@
   
   /* Status Indicators */
   .status-verified {
-    @apply text-white px-3 py-1 rounded-full;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
     background: rgb(var(--color-success));
     border: 1px solid rgb(var(--color-success-hover));
   }
   
   .status-pending {
-    @apply text-white px-3 py-1 rounded-full;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
     background: rgb(var(--color-primary));
     border: 1px solid rgb(var(--color-primary-hover));
   }
@@ -309,15 +489,15 @@
   
   /* Hash Display System */
   .hash-display {
-    @apply font-mono text-sm;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
     color: rgb(var(--text-secondary));
   }
   
   .hash-card {
     background: rgb(var(--surface-primary));
     border: 1px solid rgb(var(--color-primary));
-    @apply transition-all;
-    transition-duration: var(--transition-slow);
+    transition: all var(--transition-slow);
   }
   
   .hash-card:hover {
@@ -329,7 +509,9 @@
     background: rgb(var(--surface-secondary));
     color: rgb(var(--text-secondary));
     border: 1px solid rgb(var(--border-primary));
-    @apply px-2 py-1 rounded text-xs;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
   }
   
   .hash-compact:hover {
@@ -338,8 +520,7 @@
   
   .hash-selectable {
     user-select: all;
-    @apply transition-colors;
-    transition-duration: var(--transition-normal);
+    transition: all var(--transition-normal);
   }
   
   .hash-selectable:hover {
@@ -349,11 +530,14 @@
   
   /* Blockchain Address */
   .blockchain-address {
-    @apply font-mono text-xs px-2 py-1 rounded transition-all;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-sm);
     background: rgb(var(--status-pending-bg));
     color: rgb(var(--color-primary));
     border: 1px solid rgb(var(--color-primary));
-    transition-duration: var(--transition-normal);
+    transition: all var(--transition-normal);
   }
   
   .blockchain-address:hover {
@@ -363,9 +547,23 @@
   
   /* Theme Toggle Button */
   .theme-toggle {
-    @apply btn-secondary;
-    @apply flex items-center justify-center w-10 h-10 p-0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
     border-radius: var(--radius-lg);
+    background: rgb(var(--surface-primary));
+    color: rgb(var(--text-primary));
+    border: 1px solid rgb(var(--border-primary));
+    box-shadow: var(--shadow-lg), 0 0 0 rgb(var(--color-primary) / 0.2);
+  }
+  
+  .theme-toggle:hover {
+    background: rgb(var(--surface-hover));
+    border-color: rgb(var(--color-primary));
+    box-shadow: var(--shadow-xl), 0 0 15px rgb(var(--color-primary) / 0.3);
   }
 }
 
@@ -539,19 +737,11 @@
    RESPONSIVE DESIGN
    ================================ */
 @media (max-width: 640px) {
-  .hash-display { @apply text-xs; }
-  .hash-card { @apply p-3; }
-  .card { @apply p-4; }
-  .btn-primary, .btn-secondary, .btn-success { @apply py-2 px-4 text-sm; }
+  .hash-display { font-size: 0.75rem; }
+  .hash-card { padding: 0.75rem; }
+  .card { padding: 1rem; }
+  .btn-primary, .btn-secondary, .btn-success { 
+    padding: 0.5rem 1rem; 
+    font-size: 0.875rem; 
+  }
 }
-
-/* ================================
-   THEME TRANSITION
-   ================================ */
-* {
-  transition-property: background-color, border-color, color, box-shadow;
-  transition-duration: var(--transition-normal);
-  transition-timing-function: ease;
-}
-
-

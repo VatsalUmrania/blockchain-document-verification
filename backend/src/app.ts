@@ -1,30 +1,10 @@
-// import * as express from 'express';
-// import { corsMiddleware } from './middleware/corsMiddleware';
-// import siweRoutes from './routes/siweRoutes';
-
-// const app = express();
-
-// // Middleware
-// app.use(corsMiddleware);
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
-
-// // Routes
-// app.use('/api/auth', siweRoutes);
-
-// // Health check
-// app.get('/health', (req, res) => {
-//   res.json({ status: 'OK', timestamp: new Date().toISOString() });
-// });
-
-// export default app;
-
 import express = require('express');
 import session = require('express-session');
 import cors = require('cors');
 import { config } from './config/config';
 import siweRoutes from './routes/siweRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 const app = express();
 
@@ -77,5 +57,6 @@ app.get('/', (req, res) => {
 // All authentication routes are prefixed with /api/auth
 app.use('/api/auth', siweRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin', adminRoutes);
 
 export default app;
