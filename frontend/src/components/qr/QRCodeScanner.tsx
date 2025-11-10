@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import BlockchainService from '../../services/blockchainService';
@@ -417,9 +417,9 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
                     </motion.div>
                   </div>
 
-                  {/* Camera Status */}
+                  {/* [MODIFIED] Camera Status Badge */}
                   <div className="absolute top-4 left-4">
-                    <Badge variant="default" className="bg-green-600">
+                    <Badge variant="default">
                       <Video className="w-3 h-3 mr-1" />
                       Scanning
                     </Badge>
@@ -443,7 +443,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
               )}
             </AnimatePresence>
 
-            {/* Verification Results */}
+            {/* [MODIFIED] Verification Results (using theme colors) */}
             <AnimatePresence>
               {verificationResult && !isVerifying && (
                 <motion.div
@@ -453,26 +453,22 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
                 >
                   <Alert 
                     variant={verificationResult.isValid ? "default" : "destructive"}
-                    className={cn(
-                      "border-2",
-                      verificationResult.isValid 
-                        ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20" 
-                        : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"
-                    )}
+                    // [MODIFIED] Removed className with hardcoded colors
                   >
                     {verificationResult.isValid ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-primary" />
                     ) : (
-                      <XCircle className="h-4 w-4 text-red-600" />
+                      <XCircle className="h-4 w-4 text-destructive" />
                     )}
                     <AlertDescription>
                       <div className="space-y-4">
                         <div className="flex items-center space-x-3">
                           <span className={cn(
                             "font-semibold text-lg",
-                            verificationResult.isValid ? "text-green-600" : "text-red-600"
+                            verificationResult.isValid ? "text-primary" : "text-destructive"
                           )}>
-                            {verificationResult.isValid ? 'Document Verified ✅' : 'Verification Failed ❌'}
+                            {/* [MODIFIED] Removed emojis */}
+                            {verificationResult.isValid ? 'Document Verified' : 'Verification Failed'}
                           </span>
                         </div>
 

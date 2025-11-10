@@ -9,13 +9,16 @@ import {
   Share,
   FileCheck,
   Copy,
-  User
+  User,
+  Inbox
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Badge, badgeVariants } from '@/components/ui/badge'; // Import badgeVariants
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { VariantProps } from 'class-variance-authority';
 
 // Simplified Types
 interface Activity {
@@ -39,40 +42,64 @@ interface ActivityFeedProps {
 const ActivityFeed: React.FC<ActivityFeedProps> = ({ 
   activities = [], 
   loading = false, 
-  emptyMessage = "No activity yet"
+  emptyMessage = "Your recent activities will appear here."
 }) => {
-  // Simplified icon mapping
+
   const getActivityConfig = (activity: Activity) => {
-    const { type, status } = activity;
+    const { type } = activity;
 
     const configs = {
       issued: { icon: FileCheck, color: 'text-primary', bg: 'bg-primary/10' },
-      verified: { icon: CheckCircle, color: 'text-success', bg: 'bg-success/10' },
-      revoked: { icon: XCircle, color: 'text-error', bg: 'bg-error/10' },
+      verified: { icon: CheckCircle, color: 'text-primary', bg: 'bg-primary/10' },
+      revoked: { icon: XCircle, color: 'text-destructive', bg: 'bg-destructive/10' },
       upload: { icon: Upload, color: 'text-primary', bg: 'bg-primary/10' },
-      share: { icon: Share, color: 'text-blue-600', bg: 'bg-blue-500/10' },
-      download: { icon: FileText, color: 'text-purple-600', bg: 'bg-purple-500/10' },
-      delete: { icon: XCircle, color: 'text-error', bg: 'bg-error/10' }
+      share: { icon: Share, color: 'text-accent-foreground', bg: 'bg-accent/10' },
+      download: { icon: FileText, color: 'text-accent-foreground', bg: 'bg-accent/10' },
+      delete: { icon: XCircle, color: 'text-destructive', bg: 'bg-destructive/10' }
     };
 
     return configs[type] || { icon: FileText, color: 'text-muted-foreground', bg: 'bg-muted' };
   };
 
-  // Simplified status colors
-  const getStatusColor = (status: string) => {
-    const colors = {
-      verified: 'bg-success/20 text-success border-success/30',
-      pending: 'bg-warning/20 text-warning border-warning/30',
-      completed: 'bg-success/20 text-success border-success/30',
-      failed: 'bg-error/20 text-error border-error/30',
-      error: 'bg-error/20 text-error border-error/30',
-      processing: 'bg-primary/20 text-primary border-primary/30',
-      active: 'bg-secondary text-secondary-foreground border-secondary'
-    };
-    return colors[status as keyof typeof colors] || 'bg-muted text-muted-foreground border-muted';
+  // [FIXED] This function now returns a valid Badge variant
+  const getStatusVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
+    const statusLower = status.toLowerCase();
+
+    if (statusLower === 'verified' || statusLower === 'completed' || statusLower === 'active') {
+      return "default"; // Will use primary color
+    }
+    if (statusLower === 'pending' || statusLower === 'processing') {
+      return "secondary"; // Will use secondary color
+    }
+    if (statusLower === 'failed' || statusLower === 'error' || statusLower === 'revoked') {
+      return "destructive"; // Will use destructive color
+    }
+    
+    return 'outline'; // Default fallback
+  };
+  
+  const getDocumentTypeConfig = (docType?: string): string => {
+    if (!docType) return "bg-muted text-muted-foreground border-border";
+
+    switch (docType.toLowerCase()) {
+      case 'certificate':
+        return "bg-accent/10 text-accent-foreground border-accent/20";
+      case 'contract':
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      case 'identity':
+        return "bg-primary/10 text-primary border-primary/20";
+      case 'financial':
+        return "bg-primary/10 text-primary border-primary/20";
+      case 'legal':
+        return "bg-accent/10 text-accent-foreground border-accent/20";
+      case 'medical':
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      case 'document':
+      default:
+        return "bg-muted text-muted-foreground border-border";
+    }
   };
 
-  // Format time
   const formatTime = (timestamp: number) => {
     const now = new Date();
     const activityTime = new Date(timestamp);
@@ -87,7 +114,6 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     }
   };
 
-  // Handle hash copy
   const handleHashCopy = async (hash: string) => {
     try {
       await navigator.clipboard.writeText(hash);
@@ -97,10 +123,14 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     }
   };
 
-  // Loading state
   if (loading) {
     return (
-      <Card className="bg-surface-primary border">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Skeleton className="h-6 w-32" />
+          </CardTitle>
+        </CardHeader>
         <CardContent className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex items-center space-x-3 p-3">
@@ -117,16 +147,21 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     );
   }
 
-  // Empty state
   if (activities.length === 0) {
     return (
-      <Card className="bg-surface-primary border">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5" />
+            Activity Feed
+          </CardTitle>
+        </CardHeader>
         <CardContent>
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-8 h-8 text-muted-foreground" />
+              <Inbox className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="font-medium text-muted-foreground mb-2">No activity yet</h3>
+            <h3 className="font-medium text-lg text-foreground mb-1">No activity yet</h3>
             <p className="text-sm text-muted-foreground">{emptyMessage}</p>
           </div>
         </CardContent>
@@ -135,13 +170,18 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
   }
 
   return (
-    <Card className="bg-surface-primary border">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="w-5 h-5" />
+          Activity Feed
+        </CardTitle>
+      </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[400px]">
-          <div className="space-y-1 px-1">
+          <div className="p-2 space-y-2">
             {activities.map((activity, index) => {
               const { icon: Icon, color, bg } = getActivityConfig(activity);
-              const statusColor = getStatusColor(activity.status);
               const documentHash = activity.hash || activity.documentHash;
 
               return (
@@ -150,74 +190,73 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group"
+                  className="group flex items-start space-x-3 p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer"
                 >
-                  <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-surface-secondary transition-colors cursor-pointer">
-                    {/* Icon */}
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-lg ${bg} ${color} flex items-center justify-center`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex-1 min-w-0 space-y-1">
-                      {/* Title and Recipient */}
-                      <div className="flex items-start justify-between">
-                        <div className="min-w-0">
-                          <h4 className="text-sm font-medium text-foreground truncate">
-                            {activity.title || 'Document Activity'}
-                          </h4>
-                          {activity.recipientName && (
-                            <p className="text-xs text-muted-foreground flex items-center space-x-1 mt-0.5">
-                              <User className="w-3 h-3" />
-                              <span>{activity.recipientName}</span>
-                            </p>
-                          )}
-                        </div>
-                        
-                        {/* Status */}
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs font-normal border ${statusColor}`}
-                        >
-                          {activity.status}
-                        </Badge>
-                      </div>
-
-                      {/* Metadata */}
-                      <div className="flex items-center space-x-3 text-xs text-muted-foreground">
-                        <div className="flex items-center space-x-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{formatTime(activity.timestamp)}</span>
-                        </div>
-
-                        {documentHash && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleHashCopy(documentHash);
-                            }}
-                            className="flex items-center space-x-1 hover:text-foreground transition-colors"
-                          >
-                            <Copy className="w-3 h-3" />
-                            <span className="font-mono">
-                              {documentHash.substring(0, 6)}...
-                            </span>
-                          </button>
-                        )}
-
-                        {activity.documentType && (
-                          <span className="text-xs bg-muted px-2 py-0.5 rounded">
-                            {activity.documentType}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                  {/* Icon */}
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-lg ${bg} ${color} flex items-center justify-center`}>
+                    <Icon className="w-4 h-4" />
                   </div>
                   
-                  {/* Separator */}
-                  {index < activities.length - 1 && (
-                    <div className="mx-3 border-b border-border" />
-                  )}
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    {/* Title and Recipient */}
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-medium text-foreground truncate">
+                          {activity.title || 'Document Activity'}
+                        </h4>
+                        {activity.recipientName && (
+                          <p className="text-xs text-muted-foreground flex items-center space-x-1 mt-0.5">
+                            <User className="w-3 h-3" />
+                            <span>{activity.recipientName}</span>
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* [FIXED] Status Badge now uses the variant function */}
+                      <Badge 
+                        variant={getStatusVariant(activity.status)}
+                        className="text-xs font-normal capitalize"
+                      >
+                        {activity.status}
+                      </Badge>
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="flex items-center space-x-3 text-xs text-muted-foreground">
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{formatTime(activity.timestamp)}</span>
+                      </div>
+
+                      {documentHash && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleHashCopy(documentHash);
+                          }}
+                          className="flex items-center space-x-1 hover:text-foreground transition-colors"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span className="font-mono">
+                            {documentHash.substring(0, 6)}...
+                          </span>
+                        </button>
+                      )}
+
+                      {activity.documentType && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-xs capitalize",
+                            getDocumentTypeConfig(activity.documentType)
+                          )}
+                        >
+                          {activity.documentType}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 </motion.div>
               );
             })}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import BlockchainService from '../../services/blockchainService';
@@ -124,38 +124,16 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
       const fileBuffer = await readFileContent(selectedFile);
       const fileContent = arrayBufferToString(fileBuffer);
 
-      // Note: This hash calculation MUST match the one used during issuance.
-      // Assuming a dummy metadata object won't work if real metadata was used.
-      // A more robust third-party verification might *only* use a hash,
-      // or require the metadata file as well.
-      // For this example, we assume we can't recalculate the hash from just the file.
-      // This function is now illustrative and we should guide user to 'Verify by Hash'.
-      
       // --- GUIDANCE ---
       // We cannot reliably re-calculate the *exact* document hash from just the file,
       // as it was combined with metadata during issuance.
       // We will show an error and guide the user to use the 'Verify by Hash' tab.
-      
-      // Let's create a *file* hash (SHA-256) to show what we *can* get
-      // const fileHash = await crypto.subtle.digest('SHA-256', fileBuffer);
-      // const fileHashHex = Array.from(new Uint8Array(fileHash)).map(b => b.toString(16).padStart(2, '0')).join('');
       
       toast.error('Verification Method Mismatch', { 
         description: 'Cannot verify by file alone. Please use the "Enter Hash" tab to verify this document.' 
       });
       setVerificationMode('hash'); // Switch user to the correct tab
       
-      // --- Original logic (if hash *could* be recalculated) ---
-      // const basicMetadata = new DocumentMetadata({
-      //   documentType: 'unknown',
-      //   recipientName: 'unknown'
-      // });
-      // const blockchainService = new BlockchainService(provider, signer);
-      // await blockchainService.initialize();
-      // const calculatedHash = blockchainService.createDocumentHash(fileContent, basicMetadata);
-      // setDocumentHash(calculatedHash); 
-      // await verifyDocumentByHash(calculatedHash); 
-
     } catch (error: any) {
       console.error('❌ Verification error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Verification failed';
@@ -264,28 +242,28 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
     });
   }, []);
 
-  // Get status icon, color, and text
+  // [MODIFIED] Get status icon, color, and text using theme colors
   const getStatusConfig = useCallback((doc?: BlockchainDocument): { icon: React.ComponentType, color: string, text: string } => {
     const status = doc?.getStatus();
     
     switch (status) {
       case DOCUMENT_STATUS.VERIFIED:
-        return { icon: CheckCircle, color: 'text-green-600 dark:text-green-400', text: 'Document Verified' };
+        return { icon: CheckCircle, color: 'text-primary', text: 'Document Verified' };
       case DOCUMENT_STATUS.PENDING:
-        return { icon: Clock, color: 'text-yellow-600 dark:text-yellow-400', text: 'Document Pending Verification' };
+        return { icon: Clock, color: 'text-accent-foreground', text: 'Document Pending Verification' };
       case DOCUMENT_STATUS.REVOKED:
-        return { icon: XCircle, color: 'text-red-600 dark:text-red-400', text: 'Document Revoked' };
+        return { icon: XCircle, color: 'text-destructive', text: 'Document Revoked' };
       case DOCUMENT_STATUS.EXPIRED:
-        return { icon: AlertTriangle, color: 'text-red-600 dark:text-red-400', text: 'Document Expired' };
+        return { icon: AlertTriangle, color: 'text-destructive', text: 'Document Expired' };
       default:
-        return { icon: XCircle, color: 'text-red-600 dark:text-red-400', text: 'Verification Failed' };
+        return { icon: XCircle, color: 'text-destructive', text: 'Verification Failed' };
     }
   }, []);
 
   const { icon: StatusIcon, color: statusColor, text: statusText } = getStatusConfig(verificationResult?.document);
 
   return (
-    <div className={cn("min-h-screen py-8", className)}>      
+    <div className={cn("min-h-screen py-8", className)}>       
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -297,7 +275,8 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
             <div className="p-4 bg-muted rounded-2xl w-fit mx-auto mb-4 border">
               <Shield className="h-16 w-16 text-muted-foreground" />
             </div>
-            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+            {/* [MODIFIED] Removed gradient text */}
+            <h1 className="text-4xl font-bold mb-2 text-foreground">
               Third-Party Document Verification
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -307,7 +286,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
           </motion.div>
         </div>
         
-        {/* Wallet Connection Alert */}
+        {/* [MODIFIED] Wallet Connection Alert */}
         <AnimatePresence>
           {!isConnected && (
             <motion.div
@@ -315,17 +294,15 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
             >
-              <Alert className="mb-6">
+              <Alert variant="destructive" className="mb-6">
                 <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Wallet Connection Required</AlertTitle>
                 <AlertDescription>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-medium">Wallet Connection Required</span>
-                      <p className="text-sm mt-1">
-                        Connect your wallet to verify documents on the blockchain.
-                      </p>
-                    </div>
-                    <Button onClick={connectWallet} className="ml-4">
+                    <span>
+                      Connect your wallet to verify documents on the blockchain.
+                    </span>
+                    <Button onClick={connectWallet} variant="secondary" className="ml-4">
                       <Wallet className="w-4 h-4 mr-2" />
                       Connect Wallet
                     </Button>
@@ -401,7 +378,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* File Drop Zone */}
+                  {/* [MODIFIED] File Drop Zone */}
                   <div
                     {...getRootProps()}
                     className={cn(
@@ -409,19 +386,19 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                       isDragActive
                         ? "border-primary bg-primary/10"
                         : selectedFile
-                          ? "border-muted-foreground bg-muted"
+                          ? "border-primary/50 bg-primary/10" // Use primary color for success
                           : "border-border hover:border-primary"
                     )}
                   >
                     <input {...getInputProps()} />
                     <Upload className={cn(
                       "h-16 w-16 mx-auto mb-4",
-                      isDragActive ? "text-primary" : "text-muted-foreground"
+                      isDragActive || selectedFile ? "text-primary" : "text-muted-foreground"
                     )} />
 
                     {selectedFile ? (
                       <div>
-                        <p className="text-lg font-medium mb-2">
+                        <p className="text-lg font-medium text-primary mb-2">
                           File Selected: {selectedFile.name}
                         </p>
                         <p className="text-sm text-muted-foreground">
@@ -528,7 +505,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
           )}
         </AnimatePresence>
 
-        {/* Verification Results */}
+        {/* [MODIFIED] Verification Results (using theme colors) */}
         <AnimatePresence>
           {verificationResult && (
             <motion.div
@@ -540,8 +517,8 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <StatusIcon/>
-                    <span className={cn("ml-3", statusColor)}>
+                    <StatusIcon />
+                    <span className={cn("ml-3 text-2xl font-bold", statusColor)}>
                       {statusText}
                     </span>
                   </CardTitle>
@@ -584,11 +561,11 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                   {/* Pending Confirmation Section */}
                   {verificationResult.document?.getStatus() === DOCUMENT_STATUS.PENDING && (
                     <>
-                      <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
-                        <Clock className="h-4 w-4 text-yellow-600" />
+                      <Alert variant="destructive">
+                        <Clock className="h-4 w-4" />
                         <AlertDescription>
                           <div className="space-y-2">
-                            <h3 className="font-medium text-yellow-600">Action Required</h3>
+                            <h3 className="font-medium text-accent-foreground">Action Required</h3>
                             <p className="text-sm">
                               This document exists on the blockchain but has not been formally verified.
                               If you are the verifier, you can confirm its authenticity to move it to a 'verified' state.
@@ -620,15 +597,15 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                           Document Information
                         </h3>
                         <div className="space-y-4">
-                           <div className="flex items-start">
-                            <FileText className="h-5 w-5 text-muted-foreground mt-0.5 mr-3 flex-shrink-0" />
-                            <div>
-                              <div className="text-sm font-medium text-muted-foreground">Document Type</div>
-                              <Badge variant="secondary" className="capitalize">
-                                {verificationResult.document.documentType}
-                              </Badge>
+                            <div className="flex items-start">
+                              <FileText className="h-5 w-5 text-muted-foreground mt-0.5 mr-3 flex-shrink-0" />
+                              <div>
+                                <div className="text-sm font-medium text-muted-foreground">Document Type</div>
+                                <Badge variant="secondary" className="capitalize">
+                                  {verificationResult.document.documentType}
+                                </Badge>
+                              </div>
                             </div>
-                          </div>
                           <div className="flex items-start">
                             <User className="h-5 w-5 text-muted-foreground mt-0.5 mr-3 flex-shrink-0" />
                             <div>
@@ -689,7 +666,8 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                               <div className="text-sm font-medium text-muted-foreground">Status</div>
                               <Badge 
                                 variant={verificationResult.document.isActive ? "default" : "secondary"}
-                                className={verificationResult.document.isActive ? "text-green-600" : "text-muted-foreground"}
+                                // [MODIFIED] Use theme color for badge text
+                                className={verificationResult.document.isActive ? "text-primary-foreground" : "text-muted-foreground"}
                               >
                                 {verificationResult.document.isActive ? 'Active' : 'Inactive'}
                               </Badge>
@@ -704,11 +682,11 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                   {verificationResult.blockchainConfirmed && (
                     <>
                       <Separator />
-                      <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
-                        <Shield className="h-4 w-4 text-green-600" />
+                      <Alert variant="default">
+                        <Shield className="h-4 w-4 text-primary" />
                         <AlertDescription>
                           <div className="space-y-2">
-                            <span className="font-medium text-green-600">
+                            <span className="font-medium text-primary">
                               Verified on Blockchain
                             </span>
                             <p className="text-sm">

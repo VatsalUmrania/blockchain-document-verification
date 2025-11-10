@@ -22,6 +22,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import HashDisplay from '../common/HashDisplay';
+import { cn } from '@/lib/utils'; // Import cn
 
 // Types and Interfaces
 interface VerificationMetadata {
@@ -86,13 +87,6 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
   const [copied, setCopied] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Generate QR code effect
-  useEffect(() => {
-    if (documentHash && contractAddress) {
-      generateQRCode();
-    }
-  }, [documentHash, transactionHash, contractAddress, metadata]);
-
   // Generate verification URL and QR code
   const generateQRCode = useCallback(async (): Promise<void> => {
     setIsGenerating(true);
@@ -121,6 +115,11 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
       setVerificationURL(verifyURL);
 
+      // [FIXED] Use standard hex colors. The 'qrcode' library cannot parse oklch().
+      // Black and white is the most scannable and works on any theme.
+      const fgColor = '#000000'; // Black
+      const bgColor = '#FFFFFF'; // White
+
       // Generate QR code with theme-aware colors
       const qrOptions: QRCodeOptions = {
         errorCorrectionLevel: 'M',
@@ -128,8 +127,8 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         quality: 0.92,
         margin: 2,
         color: {
-          dark: '#000000',
-          light: '#FFFFFF'
+          dark: fgColor,
+          light: bgColor,
         },
         width: 280
       };
@@ -145,12 +144,12 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         });
       }
 
-      console.log('✅ QR Code generated successfully');
+      // console.log('QR Code generated successfully');
       toast.success('QR Code Generated', {
         description: 'Verification QR code created successfully',
       });
     } catch (error) {
-      console.error('❌ Error generating QR code:', error);
+      console.error('Error generating QR code:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate QR code';
       setError(errorMessage);
       toast.error('QR Generation Failed', {
@@ -160,6 +159,14 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       setIsGenerating(false);
     }
   }, [documentHash, transactionHash, contractAddress, metadata, onQRGenerated]);
+  
+  // [MODIFIED] Generate QR code effect with cleaner dependencies
+  useEffect(() => {
+    if (documentHash && contractAddress) {
+      generateQRCode();
+    }
+  }, [generateQRCode, documentHash, contractAddress]);
+
 
   // Copy verification URL to clipboard
   const copyToClipboard = useCallback(async (): Promise<void> => {
@@ -339,7 +346,8 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                 <div className="flex justify-center">
                   <motion.div 
                     whileHover={{ scale: 1.05 }}
-                    className="bg-white p-4 rounded-xl border-2 shadow-lg"
+                    // The 'bg-background' will be white in light mode and dark in dark mode
+                    className="bg-background p-4 rounded-xl border-2 shadow-lg"
                   >
                     <img
                       src={qrCodeDataURL}

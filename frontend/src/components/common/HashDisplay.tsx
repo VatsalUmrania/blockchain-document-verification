@@ -1,15 +1,14 @@
-// src/components/common/HashDisplay.tsx
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, ToastOptions } from 'react-toastify';
 import { 
-  DocumentDuplicateIcon, 
-  EyeIcon, 
-  EyeSlashIcon,
-  CheckIcon,
-  HashtagIcon,
-  LinkIcon
-} from '@heroicons/react/24/outline';
+  Copy,
+  Eye,
+  EyeOff,
+  Check,
+  Hash,
+  Link as LinkIcon // Renamed to avoid conflict with React Router
+} from 'lucide-react'; // Switched to lucide-react
 import { cn } from '@/lib/utils';
 
 interface HashDisplayProps {
@@ -40,7 +39,9 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
   const formatHash = (hash: string): string => {
     if (!hash) return 'No hash available';
     
-    if (isExpanded || variant === 'compact') {
+    // [FIXED] Removed `|| variant === 'compact'`
+    // This ensures that 'compact' variant respects truncation
+    if (isExpanded) {
       return hash;
     }
     
@@ -52,6 +53,12 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
     };
     
     const { start, end } = displayLengths[size] || displayLengths.md;
+    
+    // Check if hash is long enough to truncate
+    if (hash.length <= start + end) {
+      return hash;
+    }
+
     return `${hash.slice(0, start)}...${hash.slice(-end)}`;
   };
 
@@ -132,7 +139,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
                 >
-                  <CheckIcon className={`${config.iconSize} text-[rgb(var(--color-success))]`} />
+                  <Check className={`${config.iconSize} text-[rgb(var(--color-success))]`} />
                 </motion.div>
               ) : (
                 <motion.div
@@ -141,7 +148,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
                 >
-                  <DocumentDuplicateIcon className={config.iconSize} />
+                  <Copy className={config.iconSize} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -165,7 +172,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
         {showLabel && (
           <div className={`flex items-center justify-between mb-4`}>
             <div className={`flex items-center ${config.spacing}`}>
-              <HashtagIcon className={`${config.iconSize} text-[rgb(var(--color-primary))]`} />
+              <Hash className={`${config.iconSize} text-[rgb(var(--color-primary))]`} />
               <h4 className={`${size === 'lg' ? 'text-xl' : size === 'sm' ? 'text-base' : 'text-lg'} font-semibold text-[rgb(var(--text-primary))]`}>
                 {label}
               </h4>
@@ -180,9 +187,9 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                   title={isExpanded ? 'Collapse hash' : 'Expand hash'}
                 >
                   {isExpanded ? (
-                    <EyeSlashIcon className={config.iconSize} />
+                    <EyeOff className={config.iconSize} />
                   ) : (
-                    <EyeIcon className={config.iconSize} />
+                    <Eye className={config.iconSize} />
                   )}
                 </motion.button>
               )}
@@ -207,7 +214,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                         exit={{ scale: 0, rotate: 180 }}
                         transition={{ type: "spring", stiffness: 200 }}
                       >
-                        <CheckIcon className={config.iconSize} />
+                        <Check className={config.iconSize} />
                       </motion.div>
                     ) : (
                       <motion.div
@@ -216,7 +223,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                         animate={{ scale: 1 }}
                         exit={{ scale: 0 }}
                       >
-                        <DocumentDuplicateIcon className={config.iconSize} />
+                        <Copy className={config.iconSize} />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -279,7 +286,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
                 >
-                  <CheckIcon className={`${config.iconSize} text-[rgb(var(--color-success))]`} />
+                  <Check className={`${config.iconSize} text-[rgb(var(--color-success))]`} />
                 </motion.div>
               ) : (
                 <motion.div
@@ -288,7 +295,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
                 >
-                  <DocumentDuplicateIcon className={config.iconSize} />
+                  <Copy className={config.iconSize} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -303,7 +310,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
     <div className={cn(`space-y-${size === 'sm' ? '2' : '3'}`, className)}>
       {showLabel && (
         <div className={`flex items-center ${config.spacing}`}>
-          <HashtagIcon className={`${config.iconSize} text-[rgb(var(--color-primary))]`} />
+          <Hash className={`${config.iconSize} text-[rgb(var(--color-primary))]`} />
           <label className={`block ${config.text} font-semibold text-[rgb(var(--text-primary))]`}>
             {label}
           </label>
@@ -327,7 +334,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                   className="absolute inset-0 bg-[rgb(var(--color-success)/0.2)] rounded-xl flex items-center justify-center border border-[rgb(var(--color-success))]"
                 >
                   <div className={`flex items-center ${config.spacing} text-[rgb(var(--color-success))] font-semibold`}>
-                    <CheckIcon className={config.iconSize} />
+                    <Check className={config.iconSize} />
                     <span>Copied!</span>
                   </div>
                 </motion.div>
@@ -352,7 +359,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                       animate={{ rotate: 0 }}
                       exit={{ rotate: -180 }}
                     >
-                      <EyeSlashIcon className={config.iconSize} />
+                      <EyeOff className={config.iconSize} />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -361,7 +368,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                       animate={{ rotate: 0 }}
                       exit={{ rotate: 180 }}
                     >
-                      <EyeIcon className={config.iconSize} />
+                      <Eye className={config.iconSize} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -389,7 +396,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                       exit={{ scale: 0, rotate: 180 }}
                       transition={{ type: "spring", stiffness: 200 }}
                     >
-                      <CheckIcon className={config.iconSize} />
+                      <Check className={config.iconSize} />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -398,7 +405,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
                       animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
                     >
-                      <DocumentDuplicateIcon className={config.iconSize} />
+                      <Copy className={config.iconSize} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -413,7 +420,7 @@ const HashDisplay: React.FC<HashDisplayProps> = ({
             <LinkIcon className="w-3 h-3" />
             <span>Cryptographic Hash</span>
           </div>
-          <span>{hash ? `${hash.length} chars` : 'No data'}</span>
+          <span>{hash ? `${hash.length} characters` : 'No data'}</span>
         </div>
       </div>
     </div>

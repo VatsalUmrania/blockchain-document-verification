@@ -217,14 +217,14 @@ const DocumentSearch: React.FC<DocumentSearchProps> = ({
 
   const activeFilters = getActiveFilterCount();
 
-  // Filter configurations for active filter display
+  // [MODIFIED] Filter configurations using theme colors
   const filterConfigs: Record<string, FilterConfig> = {
     search: { icon: Search, color: 'bg-primary/10 text-primary border-primary/20', label: 'Search' },
-    category: { icon: Tag, color: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800', label: 'Category' },
-    dateRange: { icon: Calendar, color: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800', label: 'Date' },
-    status: { icon: CheckCircle, color: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800', label: 'Status' },
-    size: { icon: BarChart3, color: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800', label: 'Size' },
-    sort: { icon: ArrowUpDown, color: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700', label: 'Sort' }
+    category: { icon: Tag, color: 'bg-primary/10 text-primary border-primary/20', label: 'Category' },
+    dateRange: { icon: Calendar, color: 'bg-accent/10 text-accent-foreground border-accent/20', label: 'Date' },
+    status: { icon: CheckCircle, color: 'bg-secondary text-secondary-foreground border-border', label: 'Status' },
+    size: { icon: BarChart3, color: 'bg-accent/10 text-accent-foreground border-accent/20', label: 'Size' },
+    sort: { icon: ArrowUpDown, color: 'bg-muted text-muted-foreground border-border', label: 'Sort' }
   };
 
   return (
@@ -351,7 +351,7 @@ const DocumentSearch: React.FC<DocumentSearchProps> = ({
             </AnimatePresence>
           </div>
 
-          {/* Advanced Filters */}
+          {/* [MODIFIED] Advanced Filters (using theme colors) */}
           <AnimatePresence>
             {showAdvancedFilters && (
               <motion.div
@@ -366,7 +366,7 @@ const DocumentSearch: React.FC<DocumentSearchProps> = ({
                   {/* Category Filter */}
                   <div className="space-y-2">
                     <Label className="flex items-center space-x-2 text-sm font-semibold">
-                      <Tag className="w-4 h-4 text-green-600" />
+                      <Tag className="w-4 h-4 text-primary" />
                       <span>Category</span>
                     </Label>
                     <Select
@@ -416,7 +416,7 @@ const DocumentSearch: React.FC<DocumentSearchProps> = ({
                   {/* Status Filter */}
                   <div className="space-y-2">
                     <Label className="flex items-center space-x-2 text-sm font-semibold">
-                      <CheckCircle className="w-4 h-4 text-purple-600" />
+                      <CheckCircle className="w-4 h-4 text-accent-foreground" />
                       <span>Status</span>
                     </Label>
                     <Select
@@ -427,10 +427,11 @@ const DocumentSearch: React.FC<DocumentSearchProps> = ({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        {/* [MODIFIED] Removed emojis */}
                         <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="verified">✅ Verified</SelectItem>
-                        <SelectItem value="pending">⏳ Pending</SelectItem>
-                        <SelectItem value="failed">❌ Failed</SelectItem>
+                        <SelectItem value="verified">Verified</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="failed">Failed</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -438,7 +439,7 @@ const DocumentSearch: React.FC<DocumentSearchProps> = ({
                   {/* File Size Filter */}
                   <div className="space-y-2">
                     <Label className="flex items-center space-x-2 text-sm font-semibold">
-                      <BarChart3 className="w-4 h-4 text-yellow-600" />
+                      <BarChart3 className="w-4 h-4 text-accent-foreground" />
                       <span>File Size</span>
                     </Label>
                     <Select
@@ -449,10 +450,11 @@ const DocumentSearch: React.FC<DocumentSearchProps> = ({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        {/* [MODIFIED] Removed emojis */}
                         <SelectItem value="all">All Sizes</SelectItem>
-                        <SelectItem value="small">📱 Small (&lt; 1MB)</SelectItem>
-                        <SelectItem value="medium">💼 Medium (1-10MB)</SelectItem>
-                        <SelectItem value="large">📦 Large (&gt; 10MB)</SelectItem>
+                        <SelectItem value="small">Small (&lt; 1MB)</SelectItem>
+                        <SelectItem value="medium">Medium (1-10MB)</SelectItem>
+                        <SelectItem value="large">Large (&gt; 10MB)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -461,7 +463,7 @@ const DocumentSearch: React.FC<DocumentSearchProps> = ({
             )}
           </AnimatePresence>
 
-          {/* Active Filters Display */}
+          {/* [MODIFIED] Active Filters Display (using theme colors) */}
           <AnimatePresence>
             {activeFilters > 0 && (
               <motion.div

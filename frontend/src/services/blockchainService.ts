@@ -75,10 +75,10 @@ class BlockchainService {
         throw new Error("No contract deployed at the specified address.");
       }
       await this.contract.owner();
-      console.log("✅ Contract connection established");
+      // console.log("Contract connection established");
       return true;
     } catch (error) {
-      console.error("❌ Failed to connect to contract:", error);
+      console.error("Failed to connect to contract:", error);
       throw new Error("Contract not found or is invalid.");
     }
   }
@@ -106,7 +106,7 @@ class BlockchainService {
         gasUsed: receipt.gasUsed.toString(),
       };
     } catch (error: any) {
-      console.error("❌ Error registering institution:", error);
+      console.error("Error registering institution:", error);
       throw new Error(error.reason || `Failed to register institution: ${error.message}`);
     }
   }
@@ -126,7 +126,7 @@ class BlockchainService {
         gasUsed: receipt.gasUsed.toString(),
       };
     } catch (error: any) {
-      console.error("❌ Error verifying institution:", error);
+      console.error("Error verifying institution:", error);
       throw new Error(error.reason || `Failed to verify institution: ${error.message}`);
     }
   }
@@ -135,10 +135,10 @@ class BlockchainService {
     if (!this.contract) throw new Error("Contract not initialized");
     try {
       const isVerified = await this.contract.isInstitutionVerified(institutionAddress);
-      console.log(`🔍 Institution ${institutionAddress} verification status:`, isVerified);
+      // console.log(`Institution ${institutionAddress} verification status:`, isVerified);
       return isVerified;
     } catch (error) {
-      console.error("❌ Error checking institution verification:", error);
+      console.error("Error checking institution verification:", error);
       return false;
     }
   }
@@ -155,7 +155,7 @@ class BlockchainService {
         registrationDate: institutionData.registrationDate,
       };
     } catch (error) {
-      console.error("❌ Error getting institution info:", error);
+      console.error("Error getting institution info:", error);
       return null;
     }
   }
@@ -194,7 +194,7 @@ class BlockchainService {
         documentHash,
       };
     } catch (error: any) {
-      console.error("❌ Error issuing document:", error);
+      console.error("Error issuing document:", error);
       if (error.message.includes("Only authorized issuers")) {
         throw new Error("Your account is not authorized to issue documents. Please register and get verified as an institution first.");
       }
@@ -255,7 +255,7 @@ class BlockchainService {
 
         return result;
     } catch (error: any) {
-        console.error("❌ Error verifying document on chain:", error);
+        console.error("Error verifying document on chain:", error);
         return new VerificationResult({
             isValid: false,
             errors: [error.reason || "Document not found on the blockchain."],
@@ -267,13 +267,13 @@ class BlockchainService {
   async confirmVerification(documentHash: string): Promise<ContractResult> {
     if (!this.contract) throw new Error("Contract not initialized");
     try {
-      console.log(`➡️ Sending 'confirmVerification' tx for: ${documentHash}`);
+      // console.log(`Sending 'confirmVerification' tx for: ${documentHash}`);
       
       const tx: ContractTransactionResponse = await this.contract.confirmVerification(
         documentHash
       );
       
-      console.log("⏳ Waiting for confirmation...");
+      // console.log("Waiting for confirmation...");
       const receipt = await tx.wait();
       
       if (!receipt) {
@@ -287,7 +287,7 @@ class BlockchainService {
         gasUsed: receipt.gasUsed.toString(),
       };
     } catch (error: any) {
-      console.error("❌ Error confirming verification:", error);
+      console.error("Error confirming verification:", error);
       if (error.reason) {
         throw new Error(error.reason);
       }
@@ -305,7 +305,7 @@ class BlockchainService {
               maxPriorityFeePerGas: feeData.maxPriorityFeePerGas?.toString(),
           };
       } catch (error) {
-          console.error("❌ Error getting gas price:", error);
+          console.error("Error getting gas price:", error);
           return null;
       }
   }

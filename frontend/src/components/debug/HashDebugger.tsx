@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { generateDocumentHash, verifyDocumentHash } from '../../services/hashService';
+import { cn } from '@/lib/utils'; // Import cn
 
 // Types and Interfaces
 interface FileInfo {
@@ -156,7 +157,7 @@ const HashDebugger: React.FC = () => {
     }
   }, [file1, file2, expectedHash]);
 
-  // File Upload Component
+  // [MODIFIED] File Upload Component (using theme colors)
   const FileUpload: React.FC<FileUploadProps> = ({ label, file, onFileSelect, accept = ".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt" }) => (
     <div className="space-y-3">
       <Label className="text-sm font-semibold">{label}</Label>
@@ -164,17 +165,19 @@ const HashDebugger: React.FC = () => {
         type="file"
         onChange={(e) => onFileSelect(e.target.files?.[0] || null)}
         accept={accept}
-        className="cursor-pointer"
+        className="cursor-pointer file:text-primary file:font-medium"
       />
       {file && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
+          // [MODIFIED] Replaced green-50 with primary/10
+          className="p-3 bg-primary/10 border border-primary/20 rounded-lg"
         >
           <div className="flex items-center space-x-2">
-            <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-            <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+            {/* [MODIFIED] Replaced text-green-600 with text-primary */}
+            <CheckCircle className="w-4 h-4 text-primary" />
+            <span className="text-sm text-primary font-medium">
               {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
             </span>
           </div>
@@ -185,7 +188,7 @@ const HashDebugger: React.FC = () => {
 
   // Hash Display Component
   const HashDisplay: React.FC<{ label: string; hash: string; className?: string }> = ({ label, hash, className = "" }) => (
-    <div className={`space-y-2 ${className}`}>
+    <div className={cn("space-y-2", className)}>
       <div className="flex items-center justify-between">
         <Label className="text-sm font-medium">{label}</Label>
         <Button
@@ -212,14 +215,17 @@ const HashDebugger: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-8"
       >
-        {/* Header */}
+        {/* [MODIFIED] Header */}
         <div className="text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-full border border-red-200 dark:border-red-800">
-              <Bug className="w-8 h-8 text-red-600 dark:text-red-400" />
+            {/* [MODIFIED] Replaced red-100 with destructive/10 */}
+            <div className="p-3 bg-destructive/10 rounded-full border border-destructive/20">
+              {/* [MODIFIED] Replaced red-600 with text-destructive */}
+              <Bug className="w-8 h-8 text-destructive" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
+          {/* [MODIFIED] Removed gradient, using text-destructive */}
+          <h1 className="text-4xl font-bold mb-3 text-destructive">
             Hash Debugger
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -347,11 +353,13 @@ const HashDebugger: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Metadata */}
+                    {/* [MODIFIED] Metadata */}
                     {debugResult.hashGeneration.metadata && (
-                      <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
+                      // Replaced purple-50 with accent/10
+                      <Card className="bg-accent/10 border-accent/20">
                         <CardHeader>
-                          <CardTitle className="text-base text-purple-700 dark:text-purple-300">
+                          {/* Replaced text-purple-700 with text-accent-foreground */}
+                          <CardTitle className="text-base text-accent-foreground">
                             Metadata Used in Hash
                           </CardTitle>
                         </CardHeader>
@@ -366,28 +374,32 @@ const HashDebugger: React.FC = () => {
                 </Card>
               </TabsContent>
 
-              {/* Verification Results */}
+              {/* [MODIFIED] Verification Results */}
               {debugResult.verification && (
                 <TabsContent value="verification">
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center space-x-2">
-                        <ClipboardCheck className="w-5 h-5 text-green-600" />
+                        {/* Replaced text-green-600 with text-primary */}
+                        <ClipboardCheck className="w-5 h-5 text-primary" />
                         <span>Verification Analysis</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Alert className={debugResult.verification.isValid ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20" : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"}>
+                      {/* [MODIFIED] Using theme colors for alert */}
+                      <Alert className={debugResult.verification.isValid ? "border-primary/20 bg-primary/10" : "border-destructive/20 bg-destructive/10"}>
                         <div className="flex items-center justify-center space-x-3 mb-4">
                           {debugResult.verification.isValid ? (
                             <>
-                              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
-                              <span className="text-green-600 dark:text-green-400 font-bold text-xl">✅ MATCH FOUND</span>
+                              {/* [MODIFIED] Using text-primary */}
+                              <CheckCircle className="w-6 h-6 text-primary" />
+                              <span className="text-primary font-bold text-xl">✅ MATCH FOUND</span>
                             </>
                           ) : (
                             <>
-                              <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
-                              <span className="text-red-600 dark:text-red-400 font-bold text-xl">❌ NO MATCH</span>
+                              {/* [MODIFIED] Using text-destructive */}
+                              <XCircle className="w-6 h-6 text-destructive" />
+                              <span className="text-destructive font-bold text-xl">❌ NO MATCH</span>
                             </>
                           )}
                           {debugResult.verification.matchingStrategy && (
@@ -445,28 +457,32 @@ const HashDebugger: React.FC = () => {
                 </TabsContent>
               )}
 
-              {/* File Comparison Results */}
+              {/* [MODIFIED] File Comparison Results */}
               {debugResult.comparison && (
                 <TabsContent value="comparison">
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center space-x-2">
-                        <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                        {/* Replaced text-yellow-600 with text-accent-foreground */}
+                        <AlertTriangle className="w-5 h-5 text-accent-foreground" />
                         <span>File Comparison Analysis</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Alert className={debugResult.comparison.identical ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20" : "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20"}>
+                      {/* [MODIFIED] Using theme colors for alert */}
+                      <Alert className={debugResult.comparison.identical ? "border-primary/20 bg-primary/10" : "border-accent/20 bg-accent/10"}>
                         <div className="text-center mb-6">
                           {debugResult.comparison.identical ? (
                             <div className="flex items-center justify-center space-x-2">
-                              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
-                              <span className="text-green-600 dark:text-green-400 font-bold text-xl">✅ FILES ARE IDENTICAL</span>
+                              {/* [MODIFIED] Using text-primary */}
+                              <CheckCircle className="w-6 h-6 text-primary" />
+                              <span className="text-primary font-bold text-xl">✅ FILES ARE IDENTICAL</span>
                             </div>
                           ) : (
                             <div className="flex items-center justify-center space-x-2">
-                              <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-                              <span className="text-yellow-600 dark:text-yellow-400 font-bold text-xl">⚠️ FILES ARE DIFFERENT</span>
+                              {/* [MODIFIED] Using text-accent-foreground */}
+                              <AlertTriangle className="w-6 h-6 text-accent-foreground" />
+                              <span className="text-accent-foreground font-bold text-xl">⚠️ FILES ARE DIFFERENT</span>
                             </div>
                           )}
                         </div>
@@ -492,7 +508,8 @@ const HashDebugger: React.FC = () => {
                             <Card>
                               <CardHeader>
                                 <CardTitle className="text-base flex items-center space-x-2">
-                                  <FileText className="w-4 h-4 text-green-600" />
+                                  {/* [MODIFIED] Using text-accent-foreground for visual difference */}
+                                  <FileText className="w-4 h-4 text-accent-foreground" />
                                   <span>File 2</span>
                                 </CardTitle>
                               </CardHeader>

@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
 import QRCode from 'qrcode';
-import { 
+import { motion, AnimatePresence } from 'framer-motion';
+import {
   QrCode,
   Download,
   Share,
   RefreshCw,
   Loader2
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils'; // Import cn
 
 // Types and Interfaces
 interface QRCodeData {
@@ -70,12 +71,17 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         version: '1.0'
       };
 
+      // [MODIFIED] Get theme colors from CSS variables
+      const rootStyles = getComputedStyle(document.documentElement);
+      const fgColor = rootStyles.getPropertyValue('--foreground').trim() || 'oklch(0.21 0.006 285.87)';
+      const bgColor = rootStyles.getPropertyValue('--background').trim() || 'oklch(1 0 0)';
+
       const qrOptions: QRCodeOptions = {
-        width: 280, // Use a solid width
+        width: 280,
         margin: 2,
         color: {
-          dark: '#1A1A1A',  // Use a fixed dark color
-          light: '#FFFFFF'
+          dark: fgColor,  // Use foreground color
+          light: bgColor, // Use background color
         },
         errorCorrectionLevel: 'M',
         type: 'image/png'
@@ -237,11 +243,14 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                   exit={{ scale: 0.8, opacity: 0 }}
                   className="flex flex-col items-center space-y-4"
                 >
-                  <img 
-                    src={qrCodeUrl} 
-                    alt="Document QR Code"
-                    className="w-64 h-64 border rounded-lg shadow"
-                  />
+                  {/* [MODIFIED] QR code is wrapped in bg-background */}
+                  <div className="bg-background p-4 rounded-lg border">
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="Document QR Code"
+                      className="w-64 h-64 shadow" // Removed border/rounded from img
+                    />
+                  </div>
                   
                   {/* Action Buttons */}
                   <div className="flex flex-wrap justify-center gap-3 ">

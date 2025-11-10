@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FileText,
-  CheckCircle,
+  FileText, 
+  CheckCircle, 
   Clock,
   AlertTriangle,
   Calendar,
@@ -74,40 +74,40 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
   // State
   const [showDetails, setShowDetails] = useState<boolean>(false);
 
-  // Get status configuration
+  // [MODIFIED] Get status configuration using theme colors
   const getStatusConfig = (status: Document['status']): StatusConfig => {
     const configs: Record<Document['status'], StatusConfig> = {
       verified: {
         icon: CheckCircle,
-        color: 'text-green-600 dark:text-green-400',
-        bgColor: 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+        color: 'text-primary',
+        bgColor: 'bg-primary/10 border-primary/20'
       },
       pending: {
         icon: Clock,
-        color: 'text-yellow-600 dark:text-yellow-400',
-        bgColor: 'bg-yellow-100 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+        color: 'text-accent-foreground',
+        bgColor: 'bg-accent/10 border-accent/20'
       },
       failed: {
         icon: AlertTriangle,
-        color: 'text-red-600 dark:text-red-400',
-        bgColor: 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+        color: 'text-destructive',
+        bgColor: 'bg-destructive/10 border-destructive/20'
       },
       unknown: {
         icon: FileText,
-        color: 'text-gray-600 dark:text-gray-400',
-        bgColor: 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+        color: 'text-muted-foreground',
+        bgColor: 'bg-muted border-border'
       }
     };
 
     return configs[status] || configs.unknown;
   };
 
-  // Get file type icon
+  // [MODIFIED] Get file type icon using theme colors
   const getFileTypeIcon = (type: string): React.ReactNode => {
-    if (type?.includes('pdf')) return <File className="w-5 h-5 text-red-600 dark:text-red-400" />;
-    if (type?.includes('image')) return <Image className="w-5 h-5 text-green-600 dark:text-green-400" />;
+    if (type?.includes('pdf')) return <File className="w-5 h-5 text-destructive" />;
+    if (type?.includes('image')) return <Image className="w-5 h-5 text-primary" />;
     if (type?.includes('word') || type?.includes('document')) return <FileText className="w-5 h-5 text-primary" />;
-    return <Folder className="w-5 h-5 text-purple-600 dark:text-purple-400" />;
+    return <Folder className="w-5 h-5 text-accent-foreground" />;
   };
 
   // Handle card selection
@@ -189,7 +189,8 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
               <Badge className={cn("text-xs font-semibold border", statusConfig.bgColor)}>
                 <div className="flex items-center space-x-1">
                   <StatusIcon className={cn("w-3 h-3", statusConfig.color)} />
-                  <span className="capitalize">{document.status || 'Unknown'}</span>
+                  {/* [MODIFIED] Removed capitalize span, Badge handles this */}
+                  {document.status || 'Unknown'}
                 </div>
               </Badge>
             </div>
@@ -205,7 +206,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
             />
           </div>
 
-          {/* Metadata */}
+          {/* [MODIFIED] Metadata (using theme colors) */}
           <div className="space-y-3 mb-4">
             <div className="flex items-center text-sm text-muted-foreground">
               <Calendar className="w-4 h-4 mr-2 text-primary" />
@@ -214,7 +215,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
             
             {document.category && (
               <div className="flex items-center text-sm">
-                <Tag className="w-4 h-4 mr-2 text-green-600" />
+                <Tag className="w-4 h-4 mr-2 text-primary" />
                 <Badge variant="secondary" className="capitalize">
                   {document.category}
                 </Badge>
@@ -223,7 +224,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
             
             {document.metadata?.uploader && (
               <div className="flex items-center text-sm text-muted-foreground">
-                <User className="w-4 h-4 mr-2 text-purple-600" />
+                <User className="w-4 h-4 mr-2 text-accent-foreground" />
                 <code className="text-xs font-mono">
                   {document.metadata.uploader.substring(0, 8)}...
                 </code>
@@ -281,12 +282,12 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
                   />
                 </div>
 
-                {/* Additional Metadata */}
+                {/* [MODIFIED] Additional Metadata (using theme colors) */}
                 {document.metadata && (
                   <Card className="bg-muted/30">
                     <CardContent className="p-4">
                       <div className="flex items-center space-x-2 mb-3">
-                        <Hash className="w-4 h-4 text-purple-600" />
+                        <Hash className="w-4 h-4 text-accent-foreground" />
                         <h5 className="font-semibold">Metadata</h5>
                       </div>
                       <div className="space-y-3 text-sm">
@@ -307,7 +308,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
                         
                         {document.metadata.uploadedAt && (
                           <div className="flex items-center space-x-2">
-                            <Calendar className="w-4 h-4 text-green-600" />
+                            <Calendar className="w-4 h-4 text-primary" />
                             <span className="font-medium">Upload Time:</span>
                             <span className="text-muted-foreground">
                               {new Date(document.metadata.uploadedAt).toLocaleString()}
@@ -317,7 +318,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
                         
                         {document.metadata.fileType && (
                           <div className="flex items-center space-x-2">
-                            <Folder className="w-4 h-4 text-yellow-600" />
+                            <Folder className="w-4 h-4 text-accent-foreground" />
                             <span className="font-medium">File Type:</span>
                             <Badge variant="outline" className="text-xs">
                               {document.metadata.fileType}
@@ -359,6 +360,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
                     </CardContent>
                   </Card>
                   
+                  {/* [MODIFIED] This card now uses the corrected theme colors */}
                   <Card className={cn("border", statusConfig.bgColor)}>
                     <CardContent className="p-3">
                       <div className="flex items-center space-x-2 mb-1">

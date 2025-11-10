@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Wallet,
   CheckCircle,
@@ -31,12 +31,14 @@ import {
   Globe,
   Sparkles,
   LogOut,
+  Loader2 // [MODIFIED] Use Loader2 for connecting
 } from "lucide-react";
+import { cn } from "@/lib/utils"; // Import cn
 
 // Types
 interface NetworkInfo {
   name: string;
-  color: "default" | "destructive" | "secondary" | "outline";
+  color: "default" | "destructive" | "secondary" | "outline" | "accent";
   bgClass: string;
 }
 
@@ -64,49 +66,50 @@ const WalletConnect: React.FC = () => {
     return parseFloat(balance).toFixed(4);
   };
 
+  // [MODIFIED] Re-mapped to theme colors
   const getNetworkInfo = (chainId: number | null): NetworkInfo => {
     switch (chainId) {
       case 1:
         return {
           name: "Ethereum Mainnet",
           color: "default",
-          bgClass: "bg-blue-50 text-blue-700 border-blue-200",
+          bgClass: "bg-primary/10 text-primary border-primary/20",
         };
       case 11155111:
         return {
           name: "Sepolia Testnet",
-          color: "secondary",
-          bgClass: "bg-green-50 text-green-700 border-green-200",
+          color: "default", // Use primary for the main supported testnet
+          bgClass: "bg-primary/10 text-primary border-primary/20",
         };
       case 5:
         return {
           name: "Goerli Testnet",
           color: "secondary",
-          bgClass: "bg-yellow-50 text-yellow-700 border-yellow-200",
+          bgClass: "bg-secondary text-secondary-foreground border-border",
         };
       case 137:
         return {
           name: "Polygon Mainnet",
-          color: "outline",
-          bgClass: "bg-purple-50 text-purple-700 border-purple-200",
+          color: "accent",
+          bgClass: "bg-accent/10 text-accent-foreground border-accent/20",
         };
       case 42161:
         return {
           name: "Arbitrum One",
-          color: "outline",
-          bgClass: "bg-cyan-50 text-cyan-700 border-cyan-200",
+          color: "secondary",
+          bgClass: "bg-secondary text-secondary-foreground border-border",
         };
       case 10:
         return {
           name: "Optimism",
-          color: "outline",
-          bgClass: "bg-red-50 text-red-700 border-red-200",
+          color: "secondary",
+          bgClass: "bg-secondary text-secondary-foreground border-border",
         };
       default:
         return {
           name: "Unknown Network",
           color: "destructive",
-          bgClass: "bg-orange-50 text-orange-700 border-orange-200",
+          bgClass: "bg-destructive/10 text-destructive border-destructive/20",
         };
     }
   };
@@ -174,7 +177,7 @@ const WalletConnect: React.FC = () => {
           >
             {isConnecting ? (
               <>
-                <CircleDot className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Connecting...
               </>
             ) : (
@@ -202,19 +205,19 @@ const WalletConnect: React.FC = () => {
           >
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Unsupported Network</AlertTitle>
               <AlertDescription>
                 <div className="space-y-2">
-                  <p className="font-medium">Unsupported Network</p>
                   <p className="text-sm">
                     Please switch to Ethereum Mainnet or Sepolia Testnet for
                     full functionality.
                   </p>
                   <div className="flex space-x-2 mt-2">
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="destructive" className="text-xs">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Mainnet
                     </Badge>
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="destructive" className="text-xs">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Sepolia
                     </Badge>
@@ -236,15 +239,14 @@ const WalletConnect: React.FC = () => {
             <Tooltip>
               <TooltipTrigger>
                 <Badge
-                  variant={networkInfo.color}
-                  className={`${networkInfo.bgClass} cursor-help`}
+                  className={cn("cursor-help", networkInfo.bgClass)}
                 >
                   <Globe className="w-3 h-3 mr-1" />
                   {networkInfo.name}
                 </Badge>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Network ID: {chainId}</p>
+                <p>Network ID: {chainId.toString()}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -259,24 +261,27 @@ const WalletConnect: React.FC = () => {
             animate={{ scale: 1, opacity: 1 }}
             whileHover={{ scale: 1.02 }}
           >
+            {/* [MODIFIED] Button colors mapped to theme */}
             <Button
               variant="outline"
-              className={`h-10 px-4 ${
+              className={cn(
+                "h-10 px-4",
                 isWrongNetwork
-                  ? "border-destructive/50 bg-destructive/5 text-destructive hover:bg-destructive/10"
-                  : "border-green-500/50 bg-green-50 text-green-700 hover:bg-green-100"
-              }`}
+                  ? "border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                  : "border-primary/20 bg-primary/10 text-primary hover:bg-primary/20"
+              )}
             >
               <div className="flex items-center space-x-2">
                 {/* Status Indicator */}
                 <motion.div
                   animate={!isWrongNetwork ? { scale: [1, 1.2, 1] } : {}}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className={`w-2 h-2 rounded-full ${
+                  className={cn(
+                    "w-2 h-2 rounded-full",
                     isWrongNetwork
                       ? "bg-destructive animate-pulse"
-                      : "bg-green-500"
-                  }`}
+                      : "bg-primary"
+                  )}
                 />
 
                 {/* Wallet Icon */}
@@ -300,9 +305,10 @@ const WalletConnect: React.FC = () => {
 
                 {/* Dropdown Arrow */}
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${
+                  className={cn(
+                    "w-4 h-4 transition-transform duration-200",
                     showDetails ? "rotate-180" : ""
-                  }`}
+                  )}
                 />
               </div>
             </Button>
@@ -385,14 +391,15 @@ const WalletConnect: React.FC = () => {
                   </span>
                   <div className="flex items-center space-x-2">
                     <Badge variant="secondary" className="text-xs">
-                      ID: {chainId}
+                      ID: {chainId.toString()}
                     </Badge>
                   </div>
                 </div>
                 <p
-                  className={`text-sm font-medium mt-1 ${
+                  className={cn(
+                    "text-sm font-medium mt-1",
                     isWrongNetwork ? "text-destructive" : "text-foreground"
-                  }`}
+                  )}
                 >
                   {networkInfo.name}
                 </p>

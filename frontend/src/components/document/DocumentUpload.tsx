@@ -309,19 +309,19 @@ const DocumentUpload: React.FC = () => {
     setExpandedFile(prev => (prev === fileId ? null : fileId));
   }, []);
 
-  // Get file icon
+  // [MODIFIED] Get file icon using theme colors
   const getFileIcon = useCallback((file: UploadFile): React.ReactElement => {
-    if (file.type?.includes('pdf')) return <FileText className="w-6 h-6 text-red-500" />;
-    if (file.type?.includes('image')) return <Image className="w-6 h-6 text-blue-500" />;
+    if (file.type?.includes('pdf')) return <FileText className="w-6 h-6 text-destructive" />;
+    if (file.type?.includes('image')) return <Image className="w-6 h-6 text-primary" />;
     if (file.type?.includes('word') || file.type?.includes('document')) return <FileText className="w-6 h-6 text-primary" />;
     return <File className="w-6 h-6 text-muted-foreground" />;
   }, []);
 
-  // Get file status
+  // [MODIFIED] Get file status using theme colors
   const getFileStatus = useCallback((file: UploadFile): FileStatus => {
-    if (file.uploaded) return { color: 'text-green-600', text: 'Processed (Pending Verification)', icon: CheckCircle };
-    if (file.uploadError) return { color: 'text-red-600', text: `Failed: ${file.uploadError}`, icon: XCircle };
-    if (uploadProgress[file.id] !== undefined) return { color: 'text-blue-600', text: 'Processing...', icon: RefreshCw };
+    if (file.uploaded) return { color: 'text-primary', text: 'Processed (Pending Verification)', icon: CheckCircle };
+    if (file.uploadError) return { color: 'text-destructive', text: `Failed: ${file.uploadError}`, icon: XCircle };
+    if (uploadProgress[file.id] !== undefined) return { color: 'text-primary', text: 'Processing...', icon: RefreshCw };
     return { color: 'text-muted-foreground', text: 'Ready to Process', icon: Clock };
   }, [uploadProgress]);
 
@@ -339,7 +339,7 @@ const DocumentUpload: React.FC = () => {
           <h1 className="text-4xl font-bold tracking-tight mb-2 text-primary">
             Upload Documents
           </h1>
-          <p className="text-lg text-accent-foreground max-w-3xl">
+          <p className="text-lg text-muted-foreground max-w-3xl">
             Add files and document details, then process them to create a secure, verifiable record on the blockchain.
           </p>
         </div>
@@ -517,7 +517,8 @@ const DocumentUpload: React.FC = () => {
                               onClick={() => removeFile(fileObj.id)}
                               variant="ghost"
                               size="icon"
-                              className="text-muted-foreground hover:text-red-600"
+                              // [MODIFIED] Using text-destructive
+                              className="text-muted-foreground hover:text-destructive"
                               disabled={uploading}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -554,7 +555,8 @@ const DocumentUpload: React.FC = () => {
                   <Button 
                     onClick={clearAll} 
                     variant="ghost" 
-                    className="text-red-600 hover:text-red-600"
+                    // [MODIFIED] Using text-destructive
+                    className="text-destructive hover:text-destructive"
                     disabled={uploading}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -564,7 +566,7 @@ const DocumentUpload: React.FC = () => {
                     onClick={uploadDocuments} 
                     disabled={!isConnected || pendingFileCount === 0 || uploading}
                     size="lg"
-                    className='text-accent-foreground'
+                    className='text-accent-foreground' // This is correct from your theme
                   >
                     {uploading ? (
                       <RefreshCw className="w-5 h-5 mr-2 animate-spin" />

@@ -103,7 +103,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
 
-    console.log('🔌 Wallet disconnected');
+    // console.log('Wallet disconnected');
     toast.info('Wallet Disconnected', {
       description: 'Your wallet has been disconnected'
     });
@@ -138,9 +138,9 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
 
         localStorage.setItem('walletConnected', 'true');
 
-        console.log('✅ Wallet connected:', userAccount);
-        console.log('   Network:', network.name, `(Chain ID: ${network.chainId})`);
-        console.log('   Balance:', ethers.formatEther(userBalance), 'ETH');
+        // console.log('Wallet connected:', userAccount);
+        // console.log('   Network:', network.name, `(Chain ID: ${network.chainId})`);
+        // console.log('   Balance:', ethers.formatEther(userBalance), 'ETH');
         
         toast.success('Wallet Connected', {
           description: `Connected to ${userAccount.substring(0, 6)}...${userAccount.substring(38)}`
@@ -150,7 +150,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       }
 
     } catch (error: any) {
-      console.error('❌ Failed to connect wallet:', error);
+      console.error('Failed to connect wallet:', error);
       disconnectWallet();
       
       if (error.code !== 4001) {
@@ -177,11 +177,11 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
           setToken(savedToken);
           setUser(userData);
           setIsAuthenticated(true);
-          console.log('✅ Session restored from localStorage');
-          console.log('   User:', userData.address);
-          console.log('   Role:', userData.role);
+          // console.log('Session restored from localStorage');
+          // console.log('   User:', userData.address);
+          // console.log('   Role:', userData.role);
         } catch (error) {
-          console.error('❌ Failed to restore session:', error);
+          console.error('Failed to restore session:', error);
           localStorage.removeItem('token');
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
@@ -191,7 +191,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       // Restore wallet connection
       if (walletWasConnected === 'true' && window.ethereum) {
         try {
-          console.log('🔄 Restoring wallet connection...');
+          // console.log('Restoring wallet connection...');
           
           const web3Provider = new ethers.BrowserProvider(window.ethereum);
           
@@ -211,13 +211,13 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
             setBalance(ethers.formatEther(userBalance));
             setIsConnected(true);
 
-            console.log('✅ Wallet reconnected automatically:', userAccount);
+            // console.log('Wallet reconnected automatically:', userAccount);
           } else {
             // Wallet not connected anymore, clear flag
             localStorage.removeItem('walletConnected');
           }
         } catch (error) {
-          console.error('❌ Failed to restore wallet:', error);
+          console.error('Failed to restore wallet:', error);
           localStorage.removeItem('walletConnected');
         }
       }
@@ -237,10 +237,10 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
 
     setIsAuthenticating(true);
     try {
-      console.log('🔐 Starting SIWE authentication...');
+      // console.log('Starting SIWE authentication...');
 
       // Step 1: Get nonce from backend
-      console.log('📝 Requesting nonce from backend...');
+      // console.log('Requesting nonce from backend...');
       const nonceResponse = await fetch(`${API_BASE_URL}/api/auth/nonce`, {
         method: 'GET',
         credentials: 'include'
@@ -252,7 +252,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
 
       const nonceData = await nonceResponse.json();
       const nonce = nonceData.nonce;
-      console.log('✅ Nonce received:', nonce);
+      // console.log('Nonce received:', nonce);
       
       const checksumAddress = getAddress(account);
 
@@ -269,17 +269,17 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
 
       // Step 3: Prepare and sign the message
       const messageToSign = siweMessage.prepareMessage();
-      console.log('📄 SIWE message prepared');
+      // console.log('SIWE message prepared');
 
       toast.info('Signature Required', {
         description: 'Please sign the message in MetaMask'
       });
 
       const signature = await signer.signMessage(messageToSign);
-      console.log('✍️ Message signed successfully');
+      // console.log('Message signed successfully');
 
       // Step 4: Verify with backend
-      console.log('🔄 Sending verification to backend...');
+      // console.log('Sending verification to backend...');
       const verifyResponse = await fetch(`${API_BASE_URL}/api/auth/verify`, {
         method: 'POST',
         headers: { 
@@ -299,7 +299,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
 
       // Step 5: Save session
       const responseData = await verifyResponse.json();
-      console.log('✅ Verification response received');
+      // console.log('Verification response received');
 
       if (responseData.success && responseData.token) {
         const authToken = responseData.token;
@@ -321,12 +321,12 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
         setUser(enhancedUserData);
         setIsAuthenticated(true);
 
-        console.log('✅ Authentication successful!');
-        console.log('   User ID:', enhancedUserData.id);
-        console.log('   Address:', enhancedUserData.address);
-        console.log('   Role:', enhancedUserData.role);
-        console.log('   Name:', enhancedUserData.name);
-        console.log('   Username:', enhancedUserData.username);
+        // console.log('Authentication successful!');
+        // console.log('   User ID:', enhancedUserData.id);
+        // console.log('   Address:', enhancedUserData.address);
+        // console.log('   Role:', enhancedUserData.role);
+        // console.log('   Name:', enhancedUserData.name);
+        // console.log('   Username:', enhancedUserData.username);
         
         toast.success('Signed In Successfully', {
           description: `Welcome back, ${enhancedUserData.name || enhancedUserData.role}!`
@@ -336,7 +336,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       }
 
     } catch (error: any) {
-      console.error('❌ SIWE authentication error:', error);
+      console.error('SIWE authentication error:', error);
       
       if (error.code === 4001) {
         toast.error('Signature Rejected', {
@@ -374,7 +374,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
     }
 
     try {
-      console.log('🔄 Updating user profile...');
+      // console.log('Updating user profile...');
       
       const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         method: 'PATCH',
@@ -402,13 +402,13 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       setUser(enhancedUserData);
       localStorage.setItem('user', JSON.stringify(enhancedUserData));
 
-      console.log('✅ Profile updated successfully');
+      // console.log('Profile updated successfully');
       toast.success('Profile Updated', {
         description: 'Your profile has been updated successfully'
       });
 
     } catch (error: any) {
-      console.error('❌ Failed to update profile:', error);
+      console.error('Failed to update profile:', error);
       toast.error('Update Failed', {
         description: error.message || 'Failed to update profile'
       });
@@ -419,7 +419,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       if (token) {
-        console.log('🔓 Logging out from backend...');
+        // console.log('Logging out from backend...');
         await fetch(`${API_BASE_URL}/api/auth/logout`, {
           method: 'POST',
           headers: { 
@@ -428,10 +428,10 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
           },
           credentials: 'include'
         });
-        console.log('✅ Logged out from backend');
+        // console.log('Logged out from backend');
       }
     } catch (error) {
-      console.error('❌ Logout error:', error);
+      console.error('Logout error:', error);
     } finally {
       disconnectWallet();
     }
@@ -442,13 +442,13 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
     if (!window.ethereum) return;
 
     const handleAccountsChanged = (accounts: string[]) => {
-      console.log('🔄 Account changed:', accounts);
+      // console.log('Account changed:', accounts);
       if (accounts.length === 0) {
-        console.log('   User disconnected wallet');
+        // console.log('   User disconnected wallet');
         logout();
       } else {
         // Account changed, need to re-authenticate
-        console.log('   Switching to account:', accounts[0]);
+        // console.log('   Switching to account:', accounts[0]);
         setIsAuthenticated(false);
         localStorage.removeItem('token');
         localStorage.removeItem('authToken');
@@ -461,7 +461,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
     };
 
     const handleChainChanged = (newChainId: string) => {
-      console.log('🔄 Chain changed to:', newChainId);
+      // console.log('Chain changed to:', newChainId);
       toast.info('Network Changed', {
         description: 'Page will reload to update network...'
       });

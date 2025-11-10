@@ -1,18 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
-import { 
-  X,
+import {
   QrCode,
-  Camera,
   Square,
   AlertTriangle,
   Info,
   Sparkles,
   Eye,
   Play,
-  Loader2
+  Loader2,
+  Camera // [MODIFIED] Added Camera icon
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
@@ -320,9 +319,9 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
                         <Eye className="w-12 h-12 text-primary" />
                       </motion.div>
                       
-                      {/* Scanning line effect */}
+                      {/* [MODIFIED] Scanning line effect */}
                       <motion.div
-                        className="absolute top-0 left-0 right-0 h-1 bg-green-500"
+                        className="absolute top-0 left-0 right-0 h-1 bg-primary"
                         animate={{ y: [0, 256, 0] }}
                         transition={{ 
                           duration: 2,
@@ -382,11 +381,11 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
               </AlertDescription>
             </Alert>
 
-            {/* Scanner Features */}
+            {/* [MODIFIED] Scanner Features (using theme colors) */}
             <div className="grid grid-cols-2 gap-4">
               <Card className="bg-muted/50">
                 <CardContent className="p-4 text-center">
-                  <Camera className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <Camera className="w-8 h-8 text-primary mx-auto mb-2" />
                   <p className="text-sm font-medium">Camera Access</p>
                   <p className="text-xs text-muted-foreground">Real-time scanning</p>
                 </CardContent>

@@ -5,7 +5,6 @@ import { Toaster } from 'sonner';
 // Context Providers
 import { Web3Provider } from './context/Web3Context';
 import { DocumentStatsProvider } from './context/DocumentStatsContext';
-// 1. IMPORT THE MISSING AUTH PROVIDER
 import { AuthProvider } from './context/AuthContext'; 
 
 // Components
@@ -34,7 +33,7 @@ const ThemeContext = React.createContext<{
   theme: Theme;
   setTheme: (theme: Theme) => void;
 }>({
-  theme: 'dark',
+  theme: 'light', // Set default to light
   setTheme: () => {},
 });
 
@@ -83,13 +82,14 @@ const NotFoundPage: React.FC = () => {
 
 // Simple Theme Provider
 const SimpleThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>('light'); // Set default to light
 
   // Initialize theme
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+    // [MODIFIED] Default to light unless saved theme or system pref says otherwise
+    const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light'); 
     
     setTheme(initialTheme);
     document.documentElement.classList.toggle('dark', initialTheme === 'dark');
@@ -119,8 +119,6 @@ const App: React.FC = () => {
   // Initialize app without loading delay
   useEffect(() => {
     try {
-      console.log('🚀 DocVerify System initialized');
-      
       setAppState({
         hasError: false
       });
@@ -159,7 +157,6 @@ const App: React.FC = () => {
   return (
     <SimpleThemeProvider>
       <Web3Provider>
-        {/* 2. WRAP YOUR APP WITH THE AUTH PROVIDER */}
         <AuthProvider>
           <DocumentStatsProvider>
             <Router>
@@ -190,7 +187,6 @@ const App: React.FC = () => {
                   } />
                   <Route path="/qr-scanner" element={<QRCodeScanner />} />
                   
-                  {/* 3. THIS ROUTE WILL NOW WORK */}
                   <Route 
                     path="/admin" 
                     element={
@@ -206,12 +202,11 @@ const App: React.FC = () => {
 
                 {/* Toast Notifications */}
                 <Toaster
-                  position="top-right"
+                  position="bottom-right"
                   expand={false}
                   richColors
-                  closeButton
                   toastOptions={{
-                    duration: 4000,
+                    duration: 2000,
                   }}
                 />
               </div>
