@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom'; // Import useSearchParams
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,6 +19,7 @@ import {
   Eye,
   Loader2,
   Clock,
+  ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -34,15 +36,20 @@ import { DocumentMetadata, VerificationResult, BlockchainDocument, DOCUMENT_STAT
 import HashDisplay from '../common/HashDisplay';
 import { useDocumentStats } from '../../context/DocumentStatsContext';
 
-// --- FIX 1: Define VerificationMode type ---
+// --- Types ---
 type VerificationMode = 'file' | 'hash';
 type VerificationResultData = VerificationResult;
+
+// Interface for URL parsing
+interface VerificationData {
+  documentHash: string;
+  [key: string]: any;
+}
 
 interface ThirdPartyVerificationProps {
   className?: string;
 }
 
-// --- FIX 2: Change component signature to remove React.FC ---
 const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
   // State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -55,6 +62,79 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
   // Web3 Context
   const { provider, isConnected, connectWallet, signer } = useWeb3(); 
   const { refreshStats } = useDocumentStats(); 
+
+  // --- ADDED: Logic to read URL parameters ---
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Stable callback for URL-triggered verification
+  const verifyHashFromUrl = useCallback(async (hashToVerify: string) => {
+    if (!isConnected || !provider || !signer) { 
+      toast.error('Wallet Required', { 
+        description: 'Please connect your wallet to verify the hash from the URL.' 
+      });
+      // Set state so user can connect and click "Verify" manually
+      setDocumentHash(hashToVerify);
+      setVerificationMode('hash');
+      return;
+    }
+    
+    // Directly call the verification logic
+    setIsVerifying(true);
+    setVerificationResult(null);
+    try {
+      const blockchainService = new BlockchainService(provider, signer); 
+      await blockchainService.initialize();
+      const result: VerificationResultData = await blockchainService.verifyDocumentOnChain(hashToVerify);
+      
+      setVerificationResult(result);
+      const status = result.document?.getStatus();
+      if (status === DOCUMENT_STATUS.VERIFIED) {
+        toast.success('Document Verified', { description: 'Document is authentic and verified.' });
+      } else if (status === DOCUMENT_STATUS.PENDING) {
+        toast.warning('Document Pending', { description: 'Document found but awaits on-chain verification.' });
+      } else {
+        toast.error('Verification Failed', { description: result.errors?.[0] || 'Document is not valid or not found.' });
+      }
+    } catch (error: any) {
+      console.error('❌ Verification error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Verification failed';
+      setVerificationResult(new VerificationResult({ isValid: false, errors: [errorMessage] }));
+      toast.error('Verification Failed', { description: errorMessage });
+    } finally {
+      setIsVerifying(false);
+    }
+  }, [isConnected, provider, signer]); // This callback is stable
+
+  // useEffect to read search params on load
+  useEffect(() => {
+    const dataParam = searchParams.get('data');
+    if (dataParam) {
+      try {
+        const decodedData: VerificationData = JSON.parse(decodeURIComponent(dataParam));
+        if (decodedData.documentHash) {
+          setDocumentHash(decodedData.documentHash);
+          setVerificationMode('hash'); // Switch to the hash tab
+          
+          toast.info('Verification data loaded from URL. Verifying...', {
+            description: `Hash: ${decodedData.documentHash.substring(0, 10)}...`
+          });
+          
+          // Automatically trigger verification
+          verifyHashFromUrl(decodedData.documentHash);
+
+          // Clear the search param from the URL to avoid re-triggering
+          searchParams.delete('data');
+          setSearchParams(searchParams, { replace: true });
+        }
+      } catch (error) {
+        console.error('Failed to parse URL data:', error);
+        toast.error('Invalid Verification Link', {
+          description: 'The data in the URL is corrupted or invalid.'
+        });
+      }
+    }
+  }, [searchParams, setSearchParams, verifyHashFromUrl]);
+  // --- END: Logic to read URL parameters ---
 
   // File drop handler
   const onDrop = useCallback((acceptedFiles: File[]): void => {
@@ -431,7 +511,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                         onClick={verifyDocumentByFile}
                         disabled={isVerifying || !isConnected || isConfirming}
                         size="lg"
-                        className="w-full h-14 text-accent-foreground"
+                        className="w-full h-14 text-accent"
                       >
                         {isVerifying ? (
                           <>
@@ -485,7 +565,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                     onClick={() => verifyDocumentByHash()}
                     disabled={isVerifying || !isConnected || !documentHash.trim() || isConfirming}
                     size="lg"
-                    className="w-full h-14 text-accent-foreground"
+                    className="w-full h-14 text-accent"
                   >
                     {isVerifying ? (
                       <>
@@ -565,7 +645,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                         <Clock className="h-4 w-4" />
                         <AlertDescription>
                           <div className="space-y-2">
-                            <h3 className="font-medium text-accent-foreground">Action Required</h3>
+                            <h3 className="font-medium ">Action Required</h3>
                             <p className="text-sm">
                               This document exists on the blockchain but has not been formally verified.
                               If you are the verifier, you can confirm its authenticity to move it to a 'verified' state.
@@ -576,12 +656,12 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                       <Button
                         onClick={() => handleConfirmVerification(verificationResult.document!.documentHash)}
                         disabled={isConfirming || isVerifying || !isConnected}
-                        className="w-full text-accent-foreground"
+                        className="w-full text-accent"
                       >
                         {isConfirming ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
-                          <Shield className="w-4 h-4 mr-2" />
+                          <FileCheck className="w-4 h-4 mr-2" />
                         )}
                         Confirm Verification On-Chain
                       </Button>
@@ -683,7 +763,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                     <>
                       <Separator />
                       <Alert variant="default">
-                        <Shield className="h-4 w-4 text-primary" />
+                        <ShieldAlert className="h-4 w-4 text-primary" />
                         <AlertDescription>
                           <div className="space-y-2">
                             <span className="font-medium text-primary">

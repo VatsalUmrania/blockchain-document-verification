@@ -111,7 +111,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
       // Create verification URL
       const baseURL = window.location.origin;
-      const verifyURL = `${baseURL}/verify?data=${encodeURIComponent(JSON.stringify(verificationData))}`;
+      const verifyURL = `${baseURL}/third-party-verify?data=${encodeURIComponent(JSON.stringify(verificationData))}`;
 
       setVerificationURL(verifyURL);
 
