@@ -314,7 +314,7 @@ const DocumentIssuanceWorkflow: React.FC = () => {
         setInstitutionVerified(true);
       } else {
         toast.error('Verification Failed', {
-          description: `Failed to verify institution: ${result.error}`,
+          description: `Failed to verify institution}`,
         });
       }
     } catch (error) {

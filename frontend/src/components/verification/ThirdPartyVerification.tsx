@@ -16,7 +16,8 @@ import {
   Hash,
   Wallet,
   Eye,
-  Loader2
+  Loader2,
+  Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -29,49 +30,31 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import BlockchainService from '../../services/blockchainService';
 import { useWeb3 } from '../../context/Web3Context';
-import { DocumentMetadata, VerificationResult, BlockchainDocument } from '../../types/document.types';
+import { DocumentMetadata, VerificationResult, BlockchainDocument, DOCUMENT_STATUS } from '../../types/document.types';
 import HashDisplay from '../common/HashDisplay';
+import { useDocumentStats } from '../../context/DocumentStatsContext';
 
-// Types and Interfaces
+// --- FIX 1: Define VerificationMode type ---
 type VerificationMode = 'file' | 'hash';
-
-interface Document {
-  documentType: string;
-  title?: string;
-  recipientName: string;
-  recipientId?: string;
-  issuanceDate: string | Date;
-  expirationDate?: string | Date | null;
-  issuerName: string;
-  issuer: string;
-  isActive: boolean;
-  [key: string]: any;
-}
-
-interface VerificationResultData {
-  isValid: boolean;
-  document?: Document;
-  errors?: string[];
-  warnings?: string[];
-  blockchainConfirmed?: boolean;
-  transactionHash?: string;
-  blockNumber?: number;
-}
+type VerificationResultData = VerificationResult;
 
 interface ThirdPartyVerificationProps {
   className?: string;
 }
 
-const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ className }) => {
+// --- FIX 2: Change component signature to remove React.FC ---
+const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
   // State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [verificationResult, setVerificationResult] = useState<VerificationResultData | null>(null);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
+  const [isConfirming, setIsConfirming] = useState<boolean>(false); 
   const [documentHash, setDocumentHash] = useState<string>('');
   const [verificationMode, setVerificationMode] = useState<VerificationMode>('file');
 
   // Web3 Context
-  const { provider, isConnected, connectWallet } = useWeb3();
+  const { provider, isConnected, connectWallet, signer } = useWeb3(); 
+  const { refreshStats } = useDocumentStats(); 
 
   // File drop handler
   const onDrop = useCallback((acceptedFiles: File[]): void => {
@@ -84,7 +67,6 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
     }
   }, []);
 
-  // Dropzone configuration
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -97,7 +79,7 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
     maxSize: 10 * 1024 * 1024 // 10MB
   });
 
-  // Read file content
+  // File content reader
   const readFileContent = useCallback((file: File): Promise<ArrayBuffer> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -113,7 +95,7 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
     });
   }, []);
 
-  // Convert ArrayBuffer to string for hashing
+  // ArrayBuffer to string converter
   const arrayBufferToString = useCallback((buffer: ArrayBuffer): string => {
     const bytes = new Uint8Array(buffer);
     let binary = '';
@@ -122,35 +104,16 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
     }
     return binary;
   }, []);
-
-  // Convert BlockchainDocument to Document interface
-  const convertBlockchainDocumentToDocument = (blockchainDoc: BlockchainDocument): Document => {
-    return {
-      documentType: blockchainDoc.documentType,
-      title: blockchainDoc.title,
-      recipientName: blockchainDoc.recipientName,
-      recipientId: blockchainDoc.recipientId,
-      issuanceDate: blockchainDoc.issuanceDate,
-      expirationDate: blockchainDoc.expirationDate,
-      issuerName: blockchainDoc.issuerName,
-      issuer: blockchainDoc.issuer,
-      isActive: blockchainDoc.isActive
-    };
-  };
+  
 
   // Verify document by file
   const verifyDocumentByFile = useCallback(async (): Promise<void> => {
     if (!selectedFile) {
-      toast.error('File Required', {
-        description: 'Please select a file first',
-      });
+      toast.error('File Required', { description: 'Please select a file first' });
       return;
     }
-
-    if (!isConnected) {
-      toast.error('Wallet Required', {
-        description: 'Please connect your wallet first',
-      });
+    if (!isConnected || !provider || !signer) { 
+      toast.error('Wallet Required', { description: 'Please connect your wallet first' });
       return;
     }
 
@@ -161,78 +124,61 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
       const fileBuffer = await readFileContent(selectedFile);
       const fileContent = arrayBufferToString(fileBuffer);
 
-      const basicMetadata = new DocumentMetadata({
-        documentType: 'unknown',
-        title: selectedFile.name,
-        recipientName: 'unknown'
+      // Note: This hash calculation MUST match the one used during issuance.
+      // Assuming a dummy metadata object won't work if real metadata was used.
+      // A more robust third-party verification might *only* use a hash,
+      // or require the metadata file as well.
+      // For this example, we assume we can't recalculate the hash from just the file.
+      // This function is now illustrative and we should guide user to 'Verify by Hash'.
+      
+      // --- GUIDANCE ---
+      // We cannot reliably re-calculate the *exact* document hash from just the file,
+      // as it was combined with metadata during issuance.
+      // We will show an error and guide the user to use the 'Verify by Hash' tab.
+      
+      // Let's create a *file* hash (SHA-256) to show what we *can* get
+      // const fileHash = await crypto.subtle.digest('SHA-256', fileBuffer);
+      // const fileHashHex = Array.from(new Uint8Array(fileHash)).map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      toast.error('Verification Method Mismatch', { 
+        description: 'Cannot verify by file alone. Please use the "Enter Hash" tab to verify this document.' 
       });
-
-      if (!provider) {
-        throw new Error('Blockchain provider not available');
-      }
-
-      const blockchainService = new BlockchainService(provider, await provider.getSigner());
-      await blockchainService.initialize();
-
-      const calculatedHash = blockchainService.createDocumentHash(fileContent, basicMetadata);
-      console.log('🔍 Calculated document hash:', calculatedHash);
-
-      const result: VerificationResult = await blockchainService.verifyDocumentOnChain(calculatedHash);
+      setVerificationMode('hash'); // Switch user to the correct tab
       
-      // Convert the result to match VerificationResultData interface
-      const convertedResult: VerificationResultData = {
-        isValid: result.isValid,
-        document: result.document ? convertBlockchainDocumentToDocument(result.document) : undefined,
-        errors: result.errors,
-        warnings: result.warnings,
-        blockchainConfirmed: result.blockchainConfirmed,
-        transactionHash: result.transactionHash,
-        blockNumber: result.blockNumber
-      };
-      
-      setVerificationResult(convertedResult);
+      // --- Original logic (if hash *could* be recalculated) ---
+      // const basicMetadata = new DocumentMetadata({
+      //   documentType: 'unknown',
+      //   recipientName: 'unknown'
+      // });
+      // const blockchainService = new BlockchainService(provider, signer);
+      // await blockchainService.initialize();
+      // const calculatedHash = blockchainService.createDocumentHash(fileContent, basicMetadata);
+      // setDocumentHash(calculatedHash); 
+      // await verifyDocumentByHash(calculatedHash); 
 
-      if (result.isValid) {
-        toast.success('Document Verified', {
-          description: 'Document verified successfully',
-        });
-      } else {
-        toast.warning('Verification Failed', {
-          description: 'Document verification failed or document not found',
-        });
-      }
-
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Verification error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Verification failed';
-
-      const errorResult: VerificationResultData = {
-        isValid: false,
-        errors: [errorMessage]
-      };
-
-      setVerificationResult(errorResult);
-      toast.error('Verification Failed', {
-        description: errorMessage,
-      });
+      setVerificationResult(new VerificationResult({ isValid: false, errors: [errorMessage] }));
+      toast.error('Verification Failed', { description: errorMessage });
     } finally {
       setIsVerifying(false);
     }
-  }, [selectedFile, isConnected, provider, readFileContent, arrayBufferToString]);
+  }, [selectedFile, isConnected, provider, signer, readFileContent, arrayBufferToString]); // <-- Added signer
 
   // Verify document by hash
-  const verifyDocumentByHash = useCallback(async (): Promise<void> => {
-    if (!documentHash.trim()) {
-      toast.error('Hash Required', {
-        description: 'Please enter a document hash',
-      });
+  const verifyDocumentByHash = useCallback(async (hashToVerify?: string): Promise<void> => {
+    const hash = hashToVerify || documentHash.trim();
+    if (!hash) {
+      toast.error('Hash Required', { description: 'Please enter a document hash' });
       return;
     }
-
-    if (!isConnected) {
-      toast.error('Wallet Required', {
-        description: 'Please connect your wallet first',
-      });
+    if (!hash.startsWith('0x') || hash.length !== 66) {
+      toast.error('Invalid Hash Format', { description: 'Please enter a valid 32-byte hash (0x...)' });
+      return;
+    }
+    if (!isConnected || !provider || !signer) { 
+      toast.error('Wallet Required', { description: 'Please connect your wallet first' });
       return;
     }
 
@@ -240,55 +186,73 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
     setVerificationResult(null);
 
     try {
-      if (!provider) {
-        throw new Error('Blockchain provider not available');
-      }
-
-      const blockchainService = new BlockchainService(provider, await provider.getSigner());
+      const blockchainService = new BlockchainService(provider, signer); 
       await blockchainService.initialize();
 
-      const result: VerificationResult = await blockchainService.verifyDocumentOnChain(documentHash.trim());
+      const result: VerificationResultData = await blockchainService.verifyDocumentOnChain(hash);
       
-      // Convert the result to match VerificationResultData interface
-      const convertedResult: VerificationResultData = {
-        isValid: result.isValid,
-        document: result.document ? convertBlockchainDocumentToDocument(result.document) : undefined,
-        errors: result.errors,
-        warnings: result.warnings,
-        blockchainConfirmed: result.blockchainConfirmed,
-        transactionHash: result.transactionHash,
-        blockNumber: result.blockNumber
-      };
-      
-      setVerificationResult(convertedResult);
+      setVerificationResult(result);
 
-      if (result.isValid) {
-        toast.success('Document Verified', {
-          description: 'Document verified successfully',
-        });
+      const status = result.document?.getStatus();
+      if (status === DOCUMENT_STATUS.VERIFIED) {
+        toast.success('Document Verified', { description: 'Document is authentic and verified.' });
+      } else if (status === DOCUMENT_STATUS.PENDING) {
+        toast.warning('Document Pending', { description: 'Document found but awaits on-chain verification.' });
       } else {
-        toast.warning('Verification Failed', {
-          description: 'Document verification failed or document not found',
-        });
+        toast.error('Verification Failed', { description: result.errors?.[0] || 'Document is not valid or not found.' });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Verification error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Verification failed';
-
-      const errorResult: VerificationResultData = {
-        isValid: false,
-        errors: [errorMessage]
-      };
-
-      setVerificationResult(errorResult);
-      toast.error('Verification Failed', {
-        description: errorMessage,
-      });
+      setVerificationResult(new VerificationResult({ isValid: false, errors: [errorMessage] }));
+      toast.error('Verification Failed', { description: errorMessage });
     } finally {
       setIsVerifying(false);
     }
-  }, [documentHash, isConnected, provider]);
+  }, [documentHash, isConnected, provider, signer]); 
+
+  // Confirm verification (sends transaction)
+  const handleConfirmVerification = useCallback(async (hash: string): Promise<void> => {
+    if (!isConnected || !provider || !signer) {
+      toast.error('Wallet Required', {
+        description: 'Please connect your wallet to confirm verification.',
+      });
+      return;
+    }
+    
+    setIsConfirming(true);
+    toast.info('Submitting Verification', {
+      description: 'Please confirm the transaction in your wallet...',
+    });
+    
+    try {
+      const blockchainService = new BlockchainService(provider, signer);
+      await blockchainService.initialize();
+      const result = await blockchainService.confirmVerification(hash);
+
+      toast.success('Verification Confirmed!', {
+        description: `Transaction: ${result.transactionHash.substring(0, 10)}...`,
+      });
+      
+      // Refresh dashboard stats in background
+      refreshStats();
+
+      // Re-fetch the document details to show the new "verified" state
+      setTimeout(() => {
+        verifyDocumentByHash(hash);
+      }, 1000); // Small delay for state propagation
+
+    } catch (error: any) {
+      console.error('❌ Confirmation error:', error);
+      toast.error('Confirmation Failed', {
+        description: error.message || 'The transaction failed.',
+      });
+    } finally {
+      setIsConfirming(false);
+    }
+  }, [isConnected, provider, signer, verifyDocumentByHash, refreshStats]);
+
 
   // Format date for display
   const formatDate = useCallback((date: string | Date | undefined): string => {
@@ -300,19 +264,25 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
     });
   }, []);
 
-  // Get status color
-  const getStatusColor = useCallback((isValid: boolean): string => {
-    return isValid ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+  // Get status icon, color, and text
+  const getStatusConfig = useCallback((doc?: BlockchainDocument): { icon: React.ComponentType, color: string, text: string } => {
+    const status = doc?.getStatus();
+    
+    switch (status) {
+      case DOCUMENT_STATUS.VERIFIED:
+        return { icon: CheckCircle, color: 'text-green-600 dark:text-green-400', text: 'Document Verified' };
+      case DOCUMENT_STATUS.PENDING:
+        return { icon: Clock, color: 'text-yellow-600 dark:text-yellow-400', text: 'Document Pending Verification' };
+      case DOCUMENT_STATUS.REVOKED:
+        return { icon: XCircle, color: 'text-red-600 dark:text-red-400', text: 'Document Revoked' };
+      case DOCUMENT_STATUS.EXPIRED:
+        return { icon: AlertTriangle, color: 'text-red-600 dark:text-red-400', text: 'Document Expired' };
+      default:
+        return { icon: XCircle, color: 'text-red-600 dark:text-red-400', text: 'Verification Failed' };
+    }
   }, []);
 
-  // Get status icon
-  const getStatusIcon = useCallback((isValid: boolean): React.ReactNode => {
-    return isValid ? (
-      <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-    ) : (
-      <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
-    );
-  }, []);
+  const { icon: StatusIcon, color: statusColor, text: statusText } = getStatusConfig(verificationResult?.document);
 
   return (
     <div className={cn("min-h-screen py-8", className)}>      
@@ -336,8 +306,8 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
             </p>
           </motion.div>
         </div>
-
-        {/* Connection Status */}
+        
+        {/* Wallet Connection Alert */}
         <AnimatePresence>
           {!isConnected && (
             <motion.div
@@ -413,7 +383,7 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
           </Card>
         </motion.div>
 
-        {/* File Upload Section */}
+        {/* File/Hash Input Sections */}
         <AnimatePresence mode="wait">
           {verificationMode === 'file' && (
             <motion.div
@@ -482,9 +452,9 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
                     >
                       <Button
                         onClick={verifyDocumentByFile}
-                        disabled={isVerifying || !isConnected}
+                        disabled={isVerifying || !isConnected || isConfirming}
                         size="lg"
-                        className="w-full h-14"
+                        className="w-full h-14 text-accent-foreground"
                       >
                         {isVerifying ? (
                           <>
@@ -505,7 +475,6 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
             </motion.div>
           )}
 
-          {/* Hash Input Section */}
           {verificationMode === 'hash' && (
             <motion.div
               key="hash-mode"
@@ -523,22 +492,23 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="documentHash">Document Hash (SHA-256)</Label>
+                    <Label htmlFor="documentHash">Document Hash (bytes32)</Label>
                     <Input
                       type="text"
                       id="documentHash"
                       value={documentHash}
                       onChange={(e) => setDocumentHash(e.target.value)}
-                      placeholder="Enter the document hash (e.g., 0x1234...)"
+                      placeholder="Enter the document hash (e.g., 0x123...abc)"
                       className="font-mono"
+                      maxLength={66} // 0x + 64 hex chars
                     />
                   </div>
 
                   <Button
-                    onClick={verifyDocumentByHash}
-                    disabled={isVerifying || !isConnected || !documentHash.trim()}
+                    onClick={() => verifyDocumentByHash()}
+                    disabled={isVerifying || !isConnected || !documentHash.trim() || isConfirming}
                     size="lg"
-                    className="w-full h-14"
+                    className="w-full h-14 text-accent-foreground"
                   >
                     {isVerifying ? (
                       <>
@@ -570,9 +540,9 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    {getStatusIcon(verificationResult.isValid)}
-                    <span className={cn("ml-3", getStatusColor(verificationResult.isValid))}>
-                      {verificationResult.isValid ? 'Document Verified ✅' : 'Verification Failed ❌'}
+                    <StatusIcon/>
+                    <span className={cn("ml-3", statusColor)}>
+                      {statusText}
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -610,18 +580,47 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
                       </AlertDescription>
                     </Alert>
                   )}
+                  
+                  {/* Pending Confirmation Section */}
+                  {verificationResult.document?.getStatus() === DOCUMENT_STATUS.PENDING && (
+                    <>
+                      <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
+                        <Clock className="h-4 w-4 text-yellow-600" />
+                        <AlertDescription>
+                          <div className="space-y-2">
+                            <h3 className="font-medium text-yellow-600">Action Required</h3>
+                            <p className="text-sm">
+                              This document exists on the blockchain but has not been formally verified.
+                              If you are the verifier, you can confirm its authenticity to move it to a 'verified' state.
+                            </p>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                      <Button
+                        onClick={() => handleConfirmVerification(verificationResult.document!.documentHash)}
+                        disabled={isConfirming || isVerifying || !isConnected}
+                        className="w-full text-accent-foreground"
+                      >
+                        {isConfirming ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Shield className="w-4 h-4 mr-2" />
+                        )}
+                        Confirm Verification On-Chain
+                      </Button>
+                    </>
+                  )}
 
                   {/* Document Details */}
                   {verificationResult.document && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Basic Information */}
+                      {/* Document Information */}
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold border-b pb-2">
                           Document Information
                         </h3>
-
                         <div className="space-y-4">
-                          <div className="flex items-start">
+                           <div className="flex items-start">
                             <FileText className="h-5 w-5 text-muted-foreground mt-0.5 mr-3 flex-shrink-0" />
                             <div>
                               <div className="text-sm font-medium text-muted-foreground">Document Type</div>
@@ -630,7 +629,6 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
                               </Badge>
                             </div>
                           </div>
-
                           <div className="flex items-start">
                             <User className="h-5 w-5 text-muted-foreground mt-0.5 mr-3 flex-shrink-0" />
                             <div>
@@ -641,7 +639,6 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
                               )}
                             </div>
                           </div>
-
                           <div className="flex items-start">
                             <Calendar className="h-5 w-5 text-muted-foreground mt-0.5 mr-3 flex-shrink-0" />
                             <div>
@@ -649,7 +646,6 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
                               <div className="text-foreground">{formatDate(verificationResult.document.issuanceDate)}</div>
                             </div>
                           </div>
-
                           {verificationResult.document.expirationDate && (
                             <div className="flex items-start">
                               <Calendar className="h-5 w-5 text-muted-foreground mt-0.5 mr-3 flex-shrink-0" />
@@ -661,13 +657,12 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
                           )}
                         </div>
                       </div>
-
+                      
                       {/* Issuer Information */}
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold border-b pb-2">
                           Issuer Information
                         </h3>
-
                         <div className="space-y-4">
                           <div className="flex items-start">
                             <Building className="h-5 w-5 text-muted-foreground mt-0.5 mr-3 flex-shrink-0" />
@@ -676,7 +671,6 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
                               <div className="text-foreground">{verificationResult.document.issuerName}</div>
                             </div>
                           </div>
-
                           <div className="flex items-start">
                             <Info className="h-5 w-5 text-muted-foreground mt-0.5 mr-3 flex-shrink-0" />
                             <div>
@@ -689,7 +683,6 @@ const ThirdPartyVerification: React.FC<ThirdPartyVerificationProps> = ({ classNa
                               />
                             </div>
                           </div>
-
                           <div className="flex items-start">
                             <CheckCircle className="h-5 w-5 text-muted-foreground mt-0.5 mr-3 flex-shrink-0" />
                             <div>

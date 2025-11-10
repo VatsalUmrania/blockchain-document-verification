@@ -5,7 +5,7 @@ export enum DOCUMENT_STATUS {
   REVOKED = 'revoked',
   EXPIRED = 'expired'
 }
-
+// ... (DOCUMENT_TYPE enum remains the same)
 export enum DOCUMENT_TYPE {
   CERTIFICATE = 'certificate',
   DIPLOMA = 'diploma',
@@ -60,7 +60,7 @@ export interface BlockchainDocumentInput {
   expirationDate?: Date | null;
   metadataURI?: string;
   isActive: boolean;
-  isValid: boolean;
+  isVerified: boolean; // <-- ADDED
   issuerSignature?: string;
 }
 
@@ -74,7 +74,7 @@ export interface InstitutionInput {
 }
 
 export interface VerificationResultInput {
-  isValid: boolean;
+  isValid: boolean; // This represents the *overall* validity (verified, not revoked, not expired)
   document?: BlockchainDocument;
   errors?: string[];
   warnings?: string[];
@@ -85,6 +85,7 @@ export interface VerificationResultInput {
 
 // Classes
 export class DocumentMetadata {
+  // ... (Constructor and validation methods remain the same)
   // Required fields
   public documentType: string;
   public recipientName: string;
@@ -226,38 +227,6 @@ export class DocumentMetadata {
       tags: this.tags,
     };
   }
-
-  static fromJSON(data: Record<string, any>): DocumentMetadata {
-    return new DocumentMetadata({
-      // Required fields
-      documentType: data.documentType,
-      recipientName: data.recipientName,
-      
-      // Institution fields
-      issuerName: data.issuerName,
-      issuerRegistrationNumber: data.issuerRegistrationNumber,
-      issuerContact: data.issuerContact,
-      issuerAddress: data.issuerAddress,
-      issuerType: data.issuerType,
-      
-      // Document fields
-      title: data.title,
-      recipientId: data.recipientId,
-      issuanceDate: data.issuanceDate ? new Date(data.issuanceDate) : undefined,
-      expirationDate: data.expirationDate ? new Date(data.expirationDate) : undefined,
-      graduationDate: data.graduationDate ? new Date(data.graduationDate) : undefined,
-      
-      // Academic fields
-      program: data.program,
-      major: data.major,
-      gpa: data.gpa,
-      
-      // Additional fields
-      description: data.description,
-      category: data.category,
-      tags: data.tags || [],
-    });
-  }
 }
 
 export class BlockchainDocument {
@@ -272,7 +241,7 @@ export class BlockchainDocument {
   public expirationDate?: Date | null;
   public metadataURI?: string;
   public isActive: boolean;
-  public isValid: boolean;
+  public isVerified: boolean; // <-- ADDED
   public issuerSignature?: string;
 
   constructor(input: BlockchainDocumentInput) {
@@ -280,30 +249,25 @@ export class BlockchainDocument {
     this.issuer = input.issuer;
     this.issuerName = input.issuerName;
     this.documentType = input.documentType;
-    this.title = input.title;
+    this.title = input.title; // <-- ADDED
     this.recipientName = input.recipientName;
     this.recipientId = input.recipientId;
     this.issuanceDate = new Date(input.issuanceDate);
     this.expirationDate = input.expirationDate ? new Date(input.expirationDate) : null;
     this.metadataURI = input.metadataURI;
     this.isActive = input.isActive;
-    this.isValid = input.isValid;
+    this.isVerified = input.isVerified; // <-- ADDED
     this.issuerSignature = input.issuerSignature;
   }
 
+  /**
+   * @deprecated Use getStatus() instead. This only checks if it's currently valid.
+   */
   isCurrentlyValid(): boolean {
-    if (!this.isValid || !this.isActive) {
-      return false;
-    }
-
-    // Check if document has expired
-    if (this.expirationDate && this.expirationDate <= new Date()) {
-      return false;
-    }
-
-    return true;
+    return this.getStatus() === DOCUMENT_STATUS.VERIFIED;
   }
 
+  // --- MODIFICATION: Updated getStatus logic ---
   getStatus(): DOCUMENT_STATUS {
     if (!this.isActive) {
       return DOCUMENT_STATUS.REVOKED;
@@ -313,10 +277,11 @@ export class BlockchainDocument {
       return DOCUMENT_STATUS.EXPIRED;
     }
 
-    if (this.isValid) {
+    if (this.isVerified) {
       return DOCUMENT_STATUS.VERIFIED;
     }
 
+    // If not revoked, not expired, and not verified, it's pending.
     return DOCUMENT_STATUS.PENDING;
   }
 
@@ -326,18 +291,20 @@ export class BlockchainDocument {
       issuer: this.issuer,
       issuerName: this.issuerName,
       documentType: this.documentType,
+      title: this.title, // <-- ADDED
       recipientName: this.recipientName,
       recipientId: this.recipientId,
       issuanceDate: this.issuanceDate.toISOString(),
       expirationDate: this.expirationDate?.toISOString() || null,
       metadataURI: this.metadataURI,
       isActive: this.isActive,
-      isValid: this.isValid,
+      isVerified: this.isVerified, // <-- ADDED
       issuerSignature: this.issuerSignature,
     };
   }
 }
 
+// ... (Institution class remains the same) ...
 export class Institution {
   public address: string;
   public name: string;
@@ -367,6 +334,7 @@ export class Institution {
   }
 }
 
+
 export class VerificationResult {
   public isValid: boolean;
   public document?: BlockchainDocument;
@@ -390,7 +358,7 @@ export class VerificationResult {
     this.errors.push(error);
     this.isValid = false;
   }
-
+  // ... (rest of VerificationResult class remains the same) ...
   addWarning(warning: string): void {
     this.warnings.push(warning);
   }
@@ -416,7 +384,7 @@ export class VerificationResult {
   }
 }
 
-// Additional interfaces for compatibility
+// ... (Other interfaces remain the same) ...
 export interface Document {
   id: number;
   hash: string;
@@ -430,7 +398,7 @@ export interface IssuanceResult {
   documentHash: string;
   transactionHash?: string;
   blockNumber?: number;
-  gasUsed?: string; // Changed to string to match blockchain service
+  gasUsed?: string; 
   error?: string;
   metadata?: any;
 }
@@ -443,13 +411,11 @@ export interface ContractResult {
   documentHash?: string;
 }
 
-// Export types for use in other files
 export type DocumentMetadataType = DocumentMetadata;
 export type BlockchainDocumentType = BlockchainDocument;
 export type InstitutionType = Institution;
 export type VerificationResultType = VerificationResult;
 
-// Add the missing interfaces for DocumentService.types.ts
 export interface DocumentStats {
   totalDocuments: number;
   verifiedDocuments: number;

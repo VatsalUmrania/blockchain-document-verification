@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { blockchainService } from '../services/blockchainService';
-import { UserRole } from '../models/User';
 
 /**
  * Get dashboard statistics for authenticated user
@@ -17,20 +16,19 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const { address, role } = req.user;
     
     console.log(`📊 Dashboard stats requested for ${role}: ${address}`);
-
-    // Determine role type for blockchain service
-    const blockchainRole = role === UserRole.INSTITUTE ? 'institute' : 'individual';
     
-    // Fetch stats from blockchain
+    // Fetch stats from blockchain service
+    // --- MODIFICATION: This now returns the full stats object ---
     const stats = await blockchainService.getDocumentStats(address);
 
     res.json({
       success: true,
       data: {
         totalDocuments: stats.totalDocuments,
-        verified: stats.verifiedDocuments,
-        pending: stats.pendingDocuments,
-        verifications: stats.totalVerifications
+        verified: stats.verifiedDocuments,      // Pass 'verified' count
+        pending: stats.pendingDocuments,        // Pass 'pending' count
+        revoked: stats.revokedDocuments,        // Pass 'revoked' count
+        verifications: stats.totalVerifications // Pass verification count
       },
       user: {
         address,
@@ -65,15 +63,17 @@ export const getUserDocuments = async (req: Request, res: Response) => {
 
     console.log(`📄 Documents requested for ${role}: ${address} (limit=${limit}, offset=${offset})`);
 
-    // Only institutes can view issued documents for now
-    if (role !== UserRole.INSTITUTE) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only institutions can view issued documents'
-      });
-    }
+    // --- MODIFICATION: Allow anyone to view their documents ---
+    // (You can change this back if needed, but this allows individuals to see docs issued *to* them)
+    // if (role !== UserRole.INSTITUTE) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     error: 'Only institutions can view issued documents'
+    //   });
+    // }
 
-    const documents = await blockchainService.getIssuedDocuments(address);
+    // --- MODIFICATION: This function now returns the correct state (pending/verified/revoked) ---
+    const documents = await blockchainService.getIssuedDocuments(address, limit, offset);
 
     res.json({
       success: true,
@@ -82,7 +82,7 @@ export const getUserDocuments = async (req: Request, res: Response) => {
         pagination: {
           limit,
           offset,
-          total: documents.length
+          total: documents.length // Note: This total is only for the *paginated* result, not all docs
         }
       }
     });
@@ -110,13 +110,12 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
 
     const { address, role } = req.user;
 
-    // Get basic stats
+    // Get basic stats (now with pending/verified counts)
     const stats = await blockchainService.getDocumentStats(address);
 
     // Get recent documents (last 5)
-    const recentDocuments = role === UserRole.INSTITUTE 
-      ? await blockchainService.getIssuedDocuments(address, 5, 0)
-      : [];
+    // --- MODIFICATION: This now returns the correct status ---
+    const recentDocuments = await blockchainService.getIssuedDocuments(address, 5, 0);
 
     res.json({
       success: true,
@@ -128,12 +127,14 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
           revoked: stats.revokedDocuments,
           verifications: stats.totalVerifications
         },
+        // --- MODIFICATION: Status logic is now correct from the service ---
         recentDocuments: recentDocuments.map(doc => ({
           hash: doc.documentHash,
           type: doc.documentType,
+          title: doc.title,
           recipient: doc.recipientName,
           issuanceDate: doc.issuanceDate,
-          status: doc.isRevoked ? 'revoked' : 'active',
+          status: doc.status, // This will be 'pending', 'verified', 'revoked', or 'expired'
           transactionHash: doc.transactionHash
         })),
         user: {
