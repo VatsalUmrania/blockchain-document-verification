@@ -22,6 +22,7 @@ export interface ActivityItem {
   timestamp: Date;
   transactionHash?: string;
   status: 'active' | 'verified' | 'revoked' | 'expired' | 'pending'; // Added pending
+  verifiedBy?: string | null; // <-- ADD THIS FIELD
 }
 
 export interface DocumentStatsContextType {
@@ -133,7 +134,8 @@ export const DocumentStatsProvider: React.FC<DocumentStatsProviderProps> = ({ ch
           issuanceDate: doc.issuanceDate,  
           timestamp: new Date(doc.issuanceDate || Date.now()),
           transactionHash: doc.transactionHash,
-          status: doc.status || 'pending'
+          status: doc.status || 'pending',
+          verifiedBy: doc.verifiedBy || null // <-- ADD THIS FIELD
         }));
         
         // console.log('Transformed activities:', activities);

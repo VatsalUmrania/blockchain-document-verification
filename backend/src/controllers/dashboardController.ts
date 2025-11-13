@@ -63,15 +63,6 @@ export const getUserDocuments = async (req: Request, res: Response) => {
 
     console.log(`📄 Documents requested for ${role}: ${address} (limit=${limit}, offset=${offset})`);
 
-    // --- MODIFICATION: Allow anyone to view their documents ---
-    // (You can change this back if needed, but this allows individuals to see docs issued *to* them)
-    // if (role !== UserRole.INSTITUTE) {
-    //   return res.status(403).json({
-    //     success: false,
-    //     error: 'Only institutions can view issued documents'
-    //   });
-    // }
-
     // --- MODIFICATION: This function now returns the correct state (pending/verified/revoked) ---
     const documents = await blockchainService.getIssuedDocuments(address, limit, offset);
 
@@ -135,7 +126,8 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
           recipient: doc.recipientName,
           issuanceDate: doc.issuanceDate,
           status: doc.status, // This will be 'pending', 'verified', 'revoked', or 'expired'
-          transactionHash: doc.transactionHash
+          transactionHash: doc.transactionHash,
+          verifiedBy: doc.verifiedBy // <-- ADD THIS FIELD
         })),
         user: {
           address,
