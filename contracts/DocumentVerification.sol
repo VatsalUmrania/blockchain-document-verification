@@ -4,27 +4,28 @@ pragma solidity ^0.8.19;
 /**
  * @title DocumentVerification
  * @dev Smart contract for decentralized document verification
- * Allows institutions to issue documents and third parties to verify them
  */
 contract DocumentVerification {
     
-    // Document structure containing all verification data
+    // Document structure
     struct Document {
-        bytes32 documentHash;        // Hash of the document content
-        address issuer;              // Address of the issuing institution
-        string issuerName;           // Name of the issuing institution
-        string documentType;         // Type of document (degree, certificate, etc.)
-        string title;                // Document title
-        string recipientName;        // Name of the document recipient
-        string recipientId;          // ID of the recipient (student ID, etc.)
-        uint256 issuanceDate;        // Timestamp when document was issued
-        uint256 expirationDate;      // Timestamp when document expires (0 if no expiration)
-        string metadataURI;          // IPFS URI for additional metadata
-        bool isActive;               // Whether the document is still valid
-        bytes issuerSignature;       // Digital signature from issuer
+        bytes32 documentHash;
+        address issuer;
+        string issuerName;
+        string documentType;
+        string title;
+        string recipientName;
+        string recipientId;
+        uint256 issuanceDate;
+        uint256 expirationDate;
+        string metadataURI;
+        bool isActive;
+        bytes issuerSignature;
+        // --- MODIFICATION: Added new state flag ---
+        bool isVerified; // true if confirmVerification has been called
     }
     
-    // Institution structure for verified issuers
+    // Institution structure
     struct Institution {
         string name;
         string registrationNumber;
@@ -39,7 +40,7 @@ contract DocumentVerification {
     mapping(address => bool) public authorizedIssuers;
     mapping(bytes32 => bool) public revokedDocuments;
     
-    // Arrays for enumeration
+    // Arrays
     bytes32[] public documentHashes;
     address[] public institutionAddresses;
     
@@ -53,6 +54,12 @@ contract DocumentVerification {
         uint256 issuanceDate
     );
     
+    event DocumentVerified(
+        bytes32 indexed documentHash,
+        address indexed verifier,
+        uint256 verificationDate
+    );
+
     event DocumentRevoked(
         bytes32 indexed documentHash,
         address indexed issuer,
@@ -69,7 +76,7 @@ contract DocumentVerification {
         address indexed institutionAddress,
         bool verified
     );
-
+    
     event InstitutionUpdated(
         address indexed institutionAddress,
         string name
@@ -98,12 +105,8 @@ contract DocumentVerification {
         owner = msg.sender;
     }
     
-    /**
-     * @dev Register an institution
-     * @param _name Institution name
-     * @param _registrationNumber Official registration number
-     * @param _contactInfo Contact information
-     */
+    // ... (registerInstitution, updateInstitution, verifyInstitution functions remain the same) ...
+    
     function registerInstitution(
         string memory _name,
         string memory _registrationNumber,
@@ -119,18 +122,11 @@ contract DocumentVerification {
             isVerified: false,
             registrationDate: block.timestamp
         });
-        
         institutionAddresses.push(msg.sender);
         
         emit InstitutionRegistered(msg.sender, _name, block.timestamp);
     }
 
-    /**
-     * @dev Update institution information
-     * @param _name New institution name
-     * @param _registrationNumber New registration number
-     * @param _contactInfo New contact info
-     */
     function updateInstitution(
         string memory _name,
         string memory _registrationNumber,
@@ -146,10 +142,6 @@ contract DocumentVerification {
         emit InstitutionUpdated(msg.sender, _name);
     }
     
-    /**
-     * @dev Verify an institution (only owner)
-     * @param _institutionAddress Address of the institution to verify
-     */
     function verifyInstitution(address _institutionAddress) external onlyOwner {
         require(institutions[_institutionAddress].registrationDate > 0, "Institution not registered");
         
@@ -158,16 +150,9 @@ contract DocumentVerification {
         
         emit InstitutionVerified(_institutionAddress, true);
     }
-    
+
     /**
      * @dev Issue a new document
-     * @param _documentHash Hash of the document content
-     * @param _documentType Type of document
-     * @param _recipientName Name of the recipient
-     * @param _recipientId ID of the recipient
-     * @param _expirationDate Expiration date (0 if no expiration)
-     * @param _metadataURI IPFS URI for additional metadata
-     * @param _issuerSignature Digital signature from issuer
      */
     function issueDocument(
         bytes32 _documentHash,
@@ -181,10 +166,7 @@ contract DocumentVerification {
     ) external onlyAuthorizedIssuer {
         require(_documentHash != bytes32(0), "Document hash cannot be empty");
         require(documents[_documentHash].issuer == address(0), "Document already exists");
-        require(bytes(_documentType).length > 0, "Document type cannot be empty");
-        require(bytes(_recipientName).length > 0, "Recipient name cannot be empty");
         
-        // Use institution name from registry
         documents[_documentHash] = Document({
             documentHash: _documentHash,
             issuer: msg.sender,
@@ -197,9 +179,9 @@ contract DocumentVerification {
             expirationDate: _expirationDate,
             metadataURI: _metadataURI,
             isActive: true,
-            issuerSignature: _issuerSignature
+            issuerSignature: _issuerSignature,
+            isVerified: false // Default to false
         });
-        
         documentHashes.push(_documentHash);
         
         emit DocumentIssued(
@@ -212,61 +194,57 @@ contract DocumentVerification {
         );
     }
     
+    // --- MODIFICATION: Fixed "Stack too deep" error ---
     /**
-     * @dev Verify a document by its hash
+     * @dev Read-only check for a document's details and validity
      * @param _documentHash Hash of the document to verify
-     * @return issuer Address of the document issuer
-     * @return issuerName Name of the issuing institution
-     * @return documentType Type of the document
-     * @return title Title of the document
-     * @return recipientName Name of the document recipient
-     * @return recipientId ID of the document recipient
-     * @return issuanceDate Timestamp when document was issued
-     * @return expirationDate Timestamp when document expires
-     * @return isValidDoc Whether the document is currently valid
-     * @return isActive Whether the document is still active
+     * @return doc The complete Document struct
+     * @return isValidDoc Calculated boolean for overall validity
      */
     function verifyDocument(bytes32 _documentHash)
         external
         view
         documentExists(_documentHash)
         returns (
-            address issuer,
-            string memory issuerName,
-            string memory documentType,
-            string memory title,
-            string memory recipientName,
-            string memory recipientId,
-            uint256 issuanceDate,
-            uint256 expirationDate,
-            bool isValidDoc,
-            bool isActive
+            Document memory doc,
+            bool isValidDoc
         )
     {
-        Document memory doc = documents[_documentHash];
+        doc = documents[_documentHash];
+        
+        // Calculate overall validity
+        isValidDoc = doc.isActive &&
+                     !revokedDocuments[_documentHash] &&
+                     (doc.expirationDate == 0 || doc.expirationDate > block.timestamp) &&
+                     institutions[doc.issuer].isVerified &&
+                     doc.isVerified; // Check our new flag
 
-        bool documentIsValid = !revokedDocuments[_documentHash] &&
-                                doc.isActive &&
-                                (doc.expirationDate == 0 || doc.expirationDate > block.timestamp) &&
-                                institutions[doc.issuer].isVerified;
+        // Return the struct and the calculated boolean
+        return (doc, isValidDoc);
+    }
 
-        return (
-            doc.issuer,
-            doc.issuerName,
-            doc.documentType,
-            doc.title,
-            doc.recipientName,
-            doc.recipientId,
-            doc.issuanceDate,
-            doc.expirationDate,
-            documentIsValid,
-            doc.isActive
-        );
+    /**
+     * @dev Publicly confirms a document's hash has been verified.
+     */
+    function confirmVerification(bytes32 _documentHash) 
+        external 
+        documentExists(_documentHash) 
+    {
+        Document storage doc = documents[_documentHash];
+
+        require(doc.isActive, "Document has been revoked by the issuer");
+        require(!revokedDocuments[_documentHash], "Document has been revoked");
+        require(doc.expirationDate == 0 || doc.expirationDate > block.timestamp, "Document has expired");
+        require(!doc.isVerified, "Document has already been verified");
+        require(institutions[doc.issuer].isVerified, "Issuer is not verified");
+
+        doc.isVerified = true;
+
+        emit DocumentVerified(_documentHash, msg.sender, block.timestamp);
     }
     
     /**
      * @dev Revoke a document
-     * @param _documentHash Hash of the document to revoke
      */
     function revokeDocument(bytes32 _documentHash) 
         external 
@@ -282,11 +260,8 @@ contract DocumentVerification {
         emit DocumentRevoked(_documentHash, msg.sender, block.timestamp);
     }
     
-    /**
-     * @dev Get document metadata URI
-     * @param _documentHash Hash of the document
-     * @return IPFS URI for additional metadata
-     */
+    // ... (getDocumentMetadata, getIssuerSignature, etc. remain the same) ...
+    
     function getDocumentMetadata(bytes32 _documentHash) 
         external 
         view 
@@ -296,11 +271,6 @@ contract DocumentVerification {
         return documents[_documentHash].metadataURI;
     }
     
-    /**
-     * @dev Get issuer signature for a document
-     * @param _documentHash Hash of the document
-     * @return Digital signature from issuer
-     */
     function getIssuerSignature(bytes32 _documentHash) 
         external 
         view 
@@ -310,27 +280,14 @@ contract DocumentVerification {
         return documents[_documentHash].issuerSignature;
     }
     
-    /**
-     * @dev Get total number of documents
-     * @return Total count of issued documents
-     */
     function getTotalDocuments() external view returns (uint256) {
         return documentHashes.length;
     }
     
-    /**
-     * @dev Get total number of institutions
-     * @return Total count of registered institutions
-     */
     function getTotalInstitutions() external view returns (uint256) {
         return institutionAddresses.length;
     }
     
-    /**
-     * @dev Check if an institution is verified
-     * @param _institutionAddress Address of the institution
-     * @return Whether the institution is verified
-     */
     function isInstitutionVerified(address _institutionAddress) external view returns (bool) {
         return institutions[_institutionAddress].isVerified;
     }

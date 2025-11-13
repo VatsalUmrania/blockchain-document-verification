@@ -4,6 +4,7 @@ import cors = require('cors');
 import { config } from './config/config';
 import siweRoutes from './routes/siweRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 const app = express();
 
@@ -56,5 +57,6 @@ app.get('/', (req, res) => {
 // All authentication routes are prefixed with /api/auth
 app.use('/api/auth', siweRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin', adminRoutes);
 
 export default app;
