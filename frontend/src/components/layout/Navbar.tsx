@@ -1038,10 +1038,10 @@ const UserActions: React.FC = () => {
         
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link to="/profile" className="cursor-pointer">
+            {user?.role === 'Admin' && <Link to="/admin" className="cursor-pointer">
               <User className="w-4 h-4 mr-2" />
-              <span>Profile</span>
-            </Link>
+              <span>Admin Panel</span>
+            </Link>}
           </DropdownMenuItem>
           <DropdownMenuItem className="cursor-pointer" onClick={() => copyToClipboard(account || '')}>
             <Copy className="w-4 h-4 mr-2" />
