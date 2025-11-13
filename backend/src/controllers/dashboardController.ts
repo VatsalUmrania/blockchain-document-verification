@@ -1,28 +1,3 @@
-// import { Request, Response } from 'express';
-// import { blockchainService } from '../services/blockchainService';
-
-// /**
-//  * @desc Gets dashboard statistics for the authenticated user.
-//  * @route GET /api/dashboard/stats
-//  * @access Private (requires JWT)
-//  */
-// export const getDashboardStats = async (req: Request, res: Response) => {
-//   try {
-//     // The user's address and role are attached to the request by the authMiddleware
-//     const { address, role } = req.user;
-
-//     console.log(`Received request for dashboard stats from ${role}: ${address}`);
-
-//     // Fetch real-time stats from our blockchain service using the user's address
-//     const stats = await blockchainService.getDocumentStats(address);
-
-//     res.status(200).json(stats);
-//   } catch (error) {
-//     console.error("❌ Failed to get dashboard stats:", error);
-//     res.status(500).json({ error: "Could not retrieve dashboard statistics." });
-//   }
-// };
-
 import { Request, Response } from 'express';
 import { blockchainService } from '../services/blockchainService';
 import { UserRole } from '../models/User';

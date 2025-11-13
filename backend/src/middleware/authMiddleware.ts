@@ -1,34 +1,3 @@
-// import { Request, Response, NextFunction } from 'express';
-// import { verifyToken } from '../utils/jwt';
-// import User from '../models/User';
-
-// export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-//   const authHeader = req.headers.authorization;
-
-//   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-//     return res.status(401).json({ error: 'Authorization token required' });
-//   }
-
-//   const token = authHeader.split(' ')[1];
-
-//   try {
-//     const decoded = verifyToken(token) as { id: string; address: string; role: string };
-    
-//     // Find the user in MongoDB by their ID from the token
-//     const user = await User.findById(decoded.id);
-
-//     if (!user) {
-//       return res.status(401).json({ error: 'User not found' });
-//     }
-    
-//     // Attach user information to the request object
-//     req.user = decoded;
-//     next();
-//   } catch (error) {
-//     return res.status(401).json({ error: 'Invalid or expired token' });
-//   }
-// };
-
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
 import User, { UserRole } from '../models/User';
