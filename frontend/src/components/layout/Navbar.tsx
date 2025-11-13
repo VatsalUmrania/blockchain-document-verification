@@ -672,7 +672,8 @@ import {
   Settings,
   Loader2,
   ChevronDown,
-  ShieldCheck // Added for new link and logo
+  ShieldCheck, // Added for new link and logo
+  BadgeCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -817,7 +818,7 @@ const navigationItems: NavigationItem[] = [
   { name: 'Dashboard', path: '/dashboard', icon: BarChart3 },
   { name: 'Upload', path: '/upload', icon: Upload },
   { name: 'Verify', path: '/verify', icon: Shield },
-  { name: 'Third Party', path: '/third-party-verify', icon: ShieldCheck },
+  { name: 'Third Party', path: '/third-party-verify', icon: BadgeCheck },
   { name: 'Issue', path: '/issue-document', icon: FilePlus },
   { name: 'Scanner', path: '/qr-scanner', icon: Scan },
 ];

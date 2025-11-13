@@ -405,6 +405,97 @@ class BlockchainService {
       throw new Error(`Failed to fetch institutions from chain: ${error.message}`);
     }
   }
+
+  public async getAllDocuments(
+    limit: number = 10, 
+    offset: number = 0
+  ): Promise<DocumentDetails[]> {
+    try {
+      console.log(`📄 Fetching ALL documents (limit=${limit}, offset=${offset})`);
+
+      // Get all event types (NO ISSUER FILTER)
+      const issueFilter = this.contract.filters.DocumentIssued(); // <-- No issuer address
+      const issuedEvents = await this.contract.queryFilter(issueFilter, 0, 'latest') as EventLog[];
+      
+      console.log(`  Found ${issuedEvents.length} total issued events`);
+      if (issuedEvents.length === 0) {
+        return [];
+      }
+      
+      // We need all issued hashes to filter other events
+      const allIssuedHashes = new Set(issuedEvents.map(e => e.args?.documentHash).filter(Boolean) as string[]);
+
+      const revokeFilter = this.contract.filters.DocumentRevoked(); // <-- No issuer address
+      const revokedEvents = await this.contract.queryFilter(revokeFilter, 0, 'latest') as EventLog[];
+      const revokedHashes = new Set(revokedEvents.map(e => e.args?.documentHash));
+      
+      const verifyFilter = this.contract.filters.DocumentVerified();
+      const allVerifiedEvents = await this.contract.queryFilter(verifyFilter, 0, 'latest') as EventLog[];
+      const verifiedHashes = new Set(
+        allVerifiedEvents
+          .filter(e => allIssuedHashes.has(e.args?.documentHash)) // Filter events for docs we found
+          .map(e => e.args?.documentHash)
+      );
+
+      // Reverse, then slice for pagination
+      const paginatedEvents = issuedEvents.reverse().slice(offset, offset + limit);
+
+      const documents: DocumentDetails[] = [];
+
+      for (const event of paginatedEvents) {
+        try {
+          const documentHash = event.args?.documentHash;
+          if (!documentHash) continue;
+
+          const doc = await this.contract.documents(documentHash);
+          
+          const isRevoked = revokedHashes.has(documentHash);
+          const isVerified = verifiedHashes.has(documentHash); 
+          
+          const expirationDateNum = Number(doc.expirationDate);
+          const expirationDate = expirationDateNum > 0 ? new Date(expirationDateNum * 1000) : null;
+          const isExpired = expirationDate ? expirationDate < new Date() : false;
+
+          let status: DocumentDetails['status'];
+          if (isRevoked) {
+            status = 'revoked';
+          } else if (isExpired) {
+            status = 'expired';
+          } else if (isVerified) {
+            status = 'verified';
+          } else {
+            status = 'pending';
+          }
+
+          documents.push({
+            documentHash,
+            issuer: doc.issuer || event.args?.issuer,
+            issuerName: doc.issuerName || 'Unknown Institution',
+            documentType: doc.documentType || 'other',
+            title: doc.title || '',
+            recipientName: doc.recipientName || 'Unknown Recipient',
+            recipientId: doc.recipientId || '',
+            issuanceDate: new Date(Number(doc.issuanceDate) * 1000), 
+            expirationDate,
+            status,
+            isActive: doc.isActive && !isRevoked && !isExpired,
+            isVerified: isVerified,
+            isRevoked,
+            transactionHash: event.transactionHash,
+            blockNumber: event.blockNumber
+          });
+        } catch (docError) {
+          console.error(`❌ Error fetching document details for ${event.args?.documentHash}:`, docError);
+        }
+      }
+
+      console.log(`  ✅ Returning ${documents.length} documents with full details`);
+      return documents;
+    } catch (error) {
+      console.error('❌ Error getting all documents:', error);
+      return [];
+    }
+  }
 }
 
 export const blockchainService = new BlockchainService();

@@ -3,44 +3,21 @@
 // import { blockchainService } from '../services/blockchainService';
 
 // /**
-//  * @desc    Get all users (Institutes and Individuals)
+//  * @desc    Get all on-chain institutions from the BLOCKCHAIN
 //  * @route   GET /api/admin/institutions
 //  * @access  Private (Admin only)
 //  */
 // export const listInstitutions = async (req: Request, res: Response) => {
 //   try {
-//     // 1. FIXED: Find all users that are NOT Admins
-//     const institutions = await User.find({ 
-//       role: { $ne: UserRole.ADMIN } 
-//     }).select('-__v');
-    
-//     // Enhance by fetching on-chain status for each
-//     const institutionData = await Promise.all(
-//       institutions.map(async (inst) => {
-//         try {
-//           const onChainData = await blockchainService.getInstitutionDetails(inst.address);
-//           return {
-//             ...inst.toObject(),
-//             // Use the on-chain verification status as the source of truth
-//             isVerified: onChainData.isVerified, 
-//             onChainName: onChainData.name || 'N/A',
-//             registrationDate: onChainData.registrationDate,
-//           };
-//         } catch (error) {
-//           // Handle cases where address might not be on-chain
-//           return {
-//             ...inst.toObject(),
-//             isVerified: false,
-//             onChainName: 'N/A (Not Registered On-Chain)',
-//             registrationDate: '0',
-//           };
-//         }
-//       })
-//     );
+//     // 1. FIXED: This now calls the new blockchain service function
+//     // and does NOT query MongoDB for the list.
+//     const institutions = await blockchainService.getAllInstitutionsFromChain();
+
+//     // This will now be an empty array [] if you just reset your Hardhat node.
 
 //     res.status(200).json({
 //       success: true,
-//       data: institutionData,
+//       data: institutions,
 //     });
 //   } catch (error: any) {
 //     console.error('❌ Error listing institutions:', error);
@@ -84,7 +61,8 @@
 
 //     console.log(`✅ Institution verified. Block: ${receipt.blockNumber}`);
 
-//     // 2. FIXED: Now that verification is on-chain, update the DB role
+//     // 2. We still update the DB role so the user gets the
+//     // 'Institute' role when they next log in.
 //     await User.findOneAndUpdate(
 //       { address: addressToVerify.toLowerCase() },
 //       { role: UserRole.INSTITUTE } 
@@ -146,7 +124,6 @@
 //   }
 // };
 
-
 import { Request, Response } from 'express';
 import User, { UserRole } from '../models/User';
 import { blockchainService } from '../services/blockchainService';
@@ -157,13 +134,9 @@ import { blockchainService } from '../services/blockchainService';
  * @access  Private (Admin only)
  */
 export const listInstitutions = async (req: Request, res: Response) => {
+  // ... (existing listInstitutions function stays the same)
   try {
-    // 1. FIXED: This now calls the new blockchain service function
-    // and does NOT query MongoDB for the list.
     const institutions = await blockchainService.getAllInstitutionsFromChain();
-
-    // This will now be an empty array [] if you just reset your Hardhat node.
-
     res.status(200).json({
       success: true,
       data: institutions,
@@ -184,6 +157,7 @@ export const listInstitutions = async (req: Request, res: Response) => {
  * @access  Private (Admin only)
  */
 export const verifyInstitution = async (req: Request, res: Response) => {
+  // ... (existing verifyInstitution function stays the same)
   try {
     const { addressToVerify } = req.body;
 
@@ -210,8 +184,6 @@ export const verifyInstitution = async (req: Request, res: Response) => {
 
     console.log(`✅ Institution verified. Block: ${receipt.blockNumber}`);
 
-    // 2. We still update the DB role so the user gets the
-    // 'Institute' role when they next log in.
     await User.findOneAndUpdate(
       { address: addressToVerify.toLowerCase() },
       { role: UserRole.INSTITUTE } 
@@ -239,6 +211,7 @@ export const verifyInstitution = async (req: Request, res: Response) => {
  * @access  Private (Admin only)
  */
 export const getInstitutionDetails = async (req: Request, res: Response) => {
+  // ... (existing getInstitutionDetails function stays the same)
   try {
     const { address } = req.params;
 
@@ -268,6 +241,33 @@ export const getInstitutionDetails = async (req: Request, res: Response) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to get institution details',
+      details: error.message 
+    });
+  }
+};
+
+// --- ADD THIS NEW FUNCTION ---
+/**
+ * @desc    Get all documents from the blockchain
+ * @route   GET /api/admin/documents
+ * @access  Private (Admin only)
+ */
+export const getAllDocuments = async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const documents = await blockchainService.getAllDocuments(limit, offset);
+    
+    res.status(200).json({
+      success: true,
+      data: documents,
+    });
+  } catch (error: any) {
+    console.error('❌ Error getting all documents:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get all documents',
       details: error.message 
     });
   }

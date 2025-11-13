@@ -83,13 +83,18 @@ class BlockchainService {
     }
   }
 
-  // ... (createDocumentHash, registerInstitution, verifyInstitution, isInstitutionVerified, getInstitutionInfo, issueDocument remain the same, including the null-checks for `receipt`) ...
+  // ... (registerInstitution, verifyInstitution, isInstitutionVerified, getInstitutionInfo, issueDocument remain the same, including the null-checks for `receipt`) ...
   
-  createDocumentHash(fileContent: string, metadata: DocumentMetadata): string {
-    const metadataString = JSON.stringify(metadata.toJSON());
-    const combined = fileContent + metadataString;
-    return keccak256(toUtf8Bytes(combined));
+  // =================================================================
+  // --- THIS IS THE CRITICAL CHANGE (STEP 1) ---
+  // We no longer include metadata in the hash.
+  // =================================================================
+  createDocumentHash(fileContent: string): string {
+    // const metadataString = JSON.stringify(metadata.toJSON()); // <-- REMOVED
+    // const combined = fileContent + metadataString; // <-- REMOVED
+    return keccak256(toUtf8Bytes(fileContent)); // <-- CHANGED
   }
+  // =================================================================
 
   async registerInstitution(name: string, registrationNumber: string, contactInfo: string): Promise<ContractResult> {
     if (!this.contract) throw new Error("Contract not initialized");
