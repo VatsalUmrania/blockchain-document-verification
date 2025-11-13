@@ -23,4 +23,5 @@ export const config = {
   rpcUrl: requiredEnv('RPC_URL'),
   privateKey: optionalEnv('PRIVATE_KEY', ''),
   frontendUrl: optionalEnv('FRONTEND_URL', 'http://localhost:5173'),
+  adminPrivateKey : requiredEnv('ADMIN_PRIVATE_KEY')
 };

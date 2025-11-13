@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { SiweMessage, generateNonce } from 'siwe';
-import User, { UserRole } from '../models/User';
+import User, { UserRole } from '../models/User'; // UserRole now includes ADMIN
 import { generateToken } from '../utils/jwt';
 import { blockchainService } from '../services/blockchainService';
 
@@ -131,6 +131,24 @@ export const verify = async (req: Request, res: Response) => {
 
     const userAddress = fields.data.address.toLowerCase();
     console.log('👤 Normalized address:', userAddress);
+
+    // ====================================================================
+    // --- 1. Perform ENS Reverse Lookup ---
+    // ====================================================================
+    let userEnsName: string | null = null;
+    try {
+      console.log(`🔎 Looking up ENS name for ${userAddress}...`);
+      // This function will now exist in blockchainService (see file 2)
+      userEnsName = await blockchainService.lookupAddress(userAddress); 
+      if (userEnsName) {
+        console.log(`✅ Found ENS name: ${userEnsName}`);
+      } else {
+        console.log('ℹ️  No ENS name found for address.');
+      }
+    } catch (error) {
+      console.warn(`⚠️  Could not fetch ENS name for ${userAddress}:`, (error as Error).message);
+    }
+    // ====================================================================
     
     // Check the blockchain for the user's role
     console.log('🔗 Checking blockchain for institution verification...');
@@ -145,6 +163,15 @@ export const verify = async (req: Request, res: Response) => {
     const userRole = isInstitute ? UserRole.INSTITUTE : UserRole.INDIVIDUAL;
     console.log('📊 User role determined:', userRole);
 
+    // Check for admin
+    let finalUserRole = userRole;
+    const adminAddress = process.env.ADMIN_ADDRESS?.toLowerCase();
+
+    if (adminAddress && userAddress === adminAddress) {
+      finalUserRole = UserRole.ADMIN;
+      console.log('👑 Admin user identified:', userAddress);
+    }
+
     // Find or create user
     console.log('💾 Looking up user in database...');
     let user = await User.findOne({ address: userAddress });
@@ -154,8 +181,9 @@ export const verify = async (req: Request, res: Response) => {
       try {
         user = new User({
           address: userAddress,
-          role: userRole,
-          ensName: fields.data.address,
+          role: finalUserRole,
+          // 2. FIXED: Convert null to undefined for TypeScript
+          ensName: userEnsName ? userEnsName : undefined, 
           lastLoginAt: new Date(),
         });
         await user.save();
@@ -171,7 +199,9 @@ export const verify = async (req: Request, res: Response) => {
     } else {
       console.log('📝 Updating existing user:', user._id);
       try {
-        user.role = userRole;
+        user.role = finalUserRole;
+        // 3. FIXED: Convert null to undefined for TypeScript
+        user.ensName = userEnsName ? userEnsName : undefined;
         user.lastLoginAt = new Date();
         await user.save();
         console.log('✅ User updated');
@@ -189,6 +219,7 @@ export const verify = async (req: Request, res: Response) => {
     console.log('   User ID:', user._id.toString());
     console.log('   Address:', user.address);
     console.log('   Role:', user.role);
+    console.log('   ENS:', user.ensName);
 
     // Generate JWT token
     let token;
@@ -249,6 +280,7 @@ export const verify = async (req: Request, res: Response) => {
 export const getMe = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
+      // 4. FIXED: Changed 4G01 to 401
       return res.status(401).json({ 
         success: false,
         error: 'Not authenticated' 
