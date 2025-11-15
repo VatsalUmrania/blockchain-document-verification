@@ -223,7 +223,8 @@ const Dashboard: React.FC = () => {
       recipientName: item.recipientName,
       issuanceDate: item.issuanceDate,
       documentType: item.documentType,
-      documentHash: item.documentHash
+      documentHash: item.documentHash,
+      verifiedBy: item.verifiedBy // <-- ADD THIS FIELD
     };
   }, []);
 
@@ -440,13 +441,6 @@ const Dashboard: React.FC = () => {
                     description="Check document authenticity"
                     icon={Shield}
                     onClick={() => navigateTo('/verify')}
-                    variant="secondary"
-                  />
-                  <QuickAction
-                    title="Browse Documents"
-                    description="View all your documents"
-                    icon={Eye}
-                    onClick={() => navigateTo('/documents')}
                     variant="secondary"
                   />
                 </CardContent>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom'; // Import useSearchParams
+import { useSearchParams } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,6 +20,7 @@ import {
   Loader2,
   Clock,
   ShieldAlert,
+  BadgeCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ import { useWeb3 } from '../../context/Web3Context';
 import { DocumentMetadata, VerificationResult, BlockchainDocument, DOCUMENT_STATUS } from '../../types/document.types';
 import HashDisplay from '../common/HashDisplay';
 import { useDocumentStats } from '../../context/DocumentStatsContext';
+import { keccak256, toUtf8Bytes } from 'ethers'; // <-- ADDED FOR HASHING
 
 // --- Types ---
 type VerificationMode = 'file' | 'hash';
@@ -63,168 +65,9 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
   const { provider, isConnected, connectWallet, signer } = useWeb3(); 
   const { refreshStats } = useDocumentStats(); 
 
-  // --- ADDED: Logic to read URL parameters ---
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Stable callback for URL-triggered verification
-  const verifyHashFromUrl = useCallback(async (hashToVerify: string) => {
-    if (!isConnected || !provider || !signer) { 
-      toast.error('Wallet Required', { 
-        description: 'Please connect your wallet to verify the hash from the URL.' 
-      });
-      // Set state so user can connect and click "Verify" manually
-      setDocumentHash(hashToVerify);
-      setVerificationMode('hash');
-      return;
-    }
-    
-    // Directly call the verification logic
-    setIsVerifying(true);
-    setVerificationResult(null);
-    try {
-      const blockchainService = new BlockchainService(provider, signer); 
-      await blockchainService.initialize();
-      const result: VerificationResultData = await blockchainService.verifyDocumentOnChain(hashToVerify);
-      
-      setVerificationResult(result);
-      const status = result.document?.getStatus();
-      if (status === DOCUMENT_STATUS.VERIFIED) {
-        toast.success('Document Verified', { description: 'Document is authentic and verified.' });
-      } else if (status === DOCUMENT_STATUS.PENDING) {
-        toast.warning('Document Pending', { description: 'Document found but awaits on-chain verification.' });
-      } else {
-        toast.error('Verification Failed', { description: result.errors?.[0] || 'Document is not valid or not found.' });
-      }
-    } catch (error: any) {
-      console.error('❌ Verification error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Verification failed';
-      setVerificationResult(new VerificationResult({ isValid: false, errors: [errorMessage] }));
-      toast.error('Verification Failed', { description: errorMessage });
-    } finally {
-      setIsVerifying(false);
-    }
-  }, [isConnected, provider, signer]); // This callback is stable
-
-  // useEffect to read search params on load
-  useEffect(() => {
-    const dataParam = searchParams.get('data');
-    if (dataParam) {
-      try {
-        const decodedData: VerificationData = JSON.parse(decodeURIComponent(dataParam));
-        if (decodedData.documentHash) {
-          setDocumentHash(decodedData.documentHash);
-          setVerificationMode('hash'); // Switch to the hash tab
-          
-          toast.info('Verification data loaded from URL. Verifying...', {
-            description: `Hash: ${decodedData.documentHash.substring(0, 10)}...`
-          });
-          
-          // Automatically trigger verification
-          verifyHashFromUrl(decodedData.documentHash);
-
-          // Clear the search param from the URL to avoid re-triggering
-          searchParams.delete('data');
-          setSearchParams(searchParams, { replace: true });
-        }
-      } catch (error) {
-        console.error('Failed to parse URL data:', error);
-        toast.error('Invalid Verification Link', {
-          description: 'The data in the URL is corrupted or invalid.'
-        });
-      }
-    }
-  }, [searchParams, setSearchParams, verifyHashFromUrl]);
-  // --- END: Logic to read URL parameters ---
-
-  // File drop handler
-  const onDrop = useCallback((acceptedFiles: File[]): void => {
-    if (acceptedFiles.length > 0) {
-      setSelectedFile(acceptedFiles[0]);
-      setVerificationResult(null);
-      toast.info('File Selected', {
-        description: 'File selected. Click "Verify Document" to start verification.',
-      });
-    }
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'image/*': ['.png', '.jpg', '.jpeg'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
-    },
-    multiple: false,
-    maxSize: 10 * 1024 * 1024 // 10MB
-  });
-
-  // File content reader
-  const readFileContent = useCallback((file: File): Promise<ArrayBuffer> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          resolve(e.target.result as ArrayBuffer);
-        } else {
-          reject(new Error('Failed to read file'));
-        }
-      };
-      reader.onerror = () => reject(new Error('File reading error'));
-      reader.readAsArrayBuffer(file);
-    });
-  }, []);
-
-  // ArrayBuffer to string converter
-  const arrayBufferToString = useCallback((buffer: ArrayBuffer): string => {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return binary;
-  }, []);
-  
-
-  // Verify document by file
-  const verifyDocumentByFile = useCallback(async (): Promise<void> => {
-    if (!selectedFile) {
-      toast.error('File Required', { description: 'Please select a file first' });
-      return;
-    }
-    if (!isConnected || !provider || !signer) { 
-      toast.error('Wallet Required', { description: 'Please connect your wallet first' });
-      return;
-    }
-
-    setIsVerifying(true);
-    setVerificationResult(null);
-
-    try {
-      const fileBuffer = await readFileContent(selectedFile);
-      const fileContent = arrayBufferToString(fileBuffer);
-
-      // --- GUIDANCE ---
-      // We cannot reliably re-calculate the *exact* document hash from just the file,
-      // as it was combined with metadata during issuance.
-      // We will show an error and guide the user to use the 'Verify by Hash' tab.
-      
-      toast.error('Verification Method Mismatch', { 
-        description: 'Cannot verify by file alone. Please use the "Enter Hash" tab to verify this document.' 
-      });
-      setVerificationMode('hash'); // Switch user to the correct tab
-      
-    } catch (error: any) {
-      console.error('❌ Verification error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Verification failed';
-      setVerificationResult(new VerificationResult({ isValid: false, errors: [errorMessage] }));
-      toast.error('Verification Failed', { description: errorMessage });
-    } finally {
-      setIsVerifying(false);
-    }
-  }, [selectedFile, isConnected, provider, signer, readFileContent, arrayBufferToString]); // <-- Added signer
-
-  // Verify document by hash
+  // Verify document by hash (Used by both tabs)
   const verifyDocumentByHash = useCallback(async (hashToVerify?: string): Promise<void> => {
     const hash = hashToVerify || documentHash.trim();
     if (!hash) {
@@ -269,6 +112,138 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
       setIsVerifying(false);
     }
   }, [documentHash, isConnected, provider, signer]); 
+
+  // Stable callback for URL-triggered verification
+  const verifyHashFromUrl = useCallback(async (hashToVerify: string) => {
+    if (!isConnected || !provider || !signer) { 
+      toast.error('Wallet Required', { 
+        description: 'Please connect your wallet to verify the hash from the URL.' 
+      });
+      setDocumentHash(hashToVerify);
+      setVerificationMode('hash');
+      return;
+    }
+    await verifyDocumentByHash(hashToVerify);
+  }, [isConnected, provider, signer, verifyDocumentByHash]);
+
+  // useEffect to read search params on load
+  useEffect(() => {
+    const dataParam = searchParams.get('data');
+    if (dataParam) {
+      try {
+        const decodedData: VerificationData = JSON.parse(decodeURIComponent(dataParam));
+        if (decodedData.documentHash) {
+          setDocumentHash(decodedData.documentHash);
+          setVerificationMode('hash'); // Switch to the hash tab
+          
+          toast.info('Verification data loaded from URL. Verifying...', {
+            description: `Hash: ${decodedData.documentHash.substring(0, 10)}...`
+          });
+          
+          verifyHashFromUrl(decodedData.documentHash);
+
+          searchParams.delete('data');
+          setSearchParams(searchParams, { replace: true });
+        }
+      } catch (error) {
+        console.error('Failed to parse URL data:', error);
+        toast.error('Invalid Verification Link', {
+          description: 'The data in the URL is corrupted or invalid.'
+        });
+      }
+    }
+  }, [searchParams, setSearchParams, verifyHashFromUrl]);
+
+  // File drop handler
+  const onDrop = useCallback((acceptedFiles: File[]): void => {
+    if (acceptedFiles.length > 0) {
+      setSelectedFile(acceptedFiles[0]);
+      setVerificationResult(null);
+      toast.info('File Selected', {
+        description: 'File selected. Click "Verify Document" to start verification.',
+      });
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'image/*': ['.png', '.jpg', '.jpeg'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+    },
+    multiple: false,
+    maxSize: 10 * 1024 * 1024 // 10MB
+  });
+
+  // =================================================================
+  // --- THIS IS THE CRITICAL CHANGE (STEP 3) ---
+  // =================================================================
+
+  // Read file content as a binary string (MUST MATCH ISSUANCE WORKFLOW)
+  const readFileContent = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        resolve(binary);
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }, []);
+  
+
+  // Verify document by file (This is the new, working logic)
+  const verifyDocumentByFile = useCallback(async (): Promise<void> => {
+    if (!selectedFile) {
+      toast.error('File Required', { description: 'Please select a file first' });
+      return;
+    }
+    if (!isConnected || !provider || !signer) { 
+      toast.error('Wallet Required', { description: 'Please connect your wallet first' });
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerificationResult(null);
+
+    try {
+      // 1. Read the file content as a binary string
+      const fileContent = await readFileContent(selectedFile);
+
+      // 2. Generate the file-only hash (must match blockchainService.createDocumentHash)
+      const generatedHash = keccak256(toUtf8Bytes(fileContent));
+      
+      toast.info('File hash generated', {
+        description: `Hash: ${generatedHash.substring(0, 10)}...`
+      });
+
+      // 3. Set the hash in the state (for the "Enter Hash" tab to see)
+      setDocumentHash(generatedHash);
+      
+      // 4. Call the existing blockchain verification function with this file-only hash
+      await verifyDocumentByHash(generatedHash);
+      
+    } catch (error: any) {
+      console.error('❌ Verification error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Verification failed';
+      setVerificationResult(new VerificationResult({ isValid: false, errors: [errorMessage] }));
+      toast.error('Verification Failed', { description: errorMessage });
+      setIsVerifying(false); // Make sure to stop loading on error
+    }
+    // Note: setIsVerifying(false) is handled by the verifyDocumentByHash call
+  }, [selectedFile, isConnected, provider, signer, readFileContent, verifyDocumentByHash]);
+
+  // =================================================================
+  // --- END OF CRITICAL CHANGE ---
+  // =================================================================
 
   // Confirm verification (sends transaction)
   const handleConfirmVerification = useCallback(async (hash: string): Promise<void> => {
@@ -353,7 +328,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
             transition={{ duration: 0.6 }}
           >
             <div className="p-4 bg-muted rounded-2xl w-fit mx-auto mb-4 border">
-              <Shield className="h-16 w-16 text-muted-foreground" />
+              <BadgeCheck className="h-8 w-8 text-muted-foreground" />
             </div>
             {/* [MODIFIED] Removed gradient text */}
             <h1 className="text-4xl font-bold mb-2 text-foreground">
@@ -399,7 +374,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          <Card className="mb-6">
+          <Card className="mb-0">
             <CardHeader>
               <CardTitle>Verification Method</CardTitle>
             </CardHeader>
@@ -416,7 +391,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                       : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <FileText className="h-12 w-12 mx-auto mb-3" />
+                  <FileText className="h-6 w-6 mx-auto mb-3" />
                   <div className="font-semibold text-lg mb-2">Upload Document</div>
                   <div className="text-sm opacity-75">Verify by uploading the document file</div>
                 </motion.button>
@@ -431,7 +406,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                       : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <Hash className="h-12 w-12 mx-auto mb-3" />
+                  <Hash className="h-6 w-6 mx-auto mb-3" />
                   <div className="font-semibold text-lg mb-2">Enter Hash</div>
                   <div className="text-sm opacity-75">Verify using document hash</div>
                 </motion.button>
@@ -458,7 +433,7 @@ const ThirdPartyVerification = ({ className }: ThirdPartyVerificationProps) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* [MODIFIED] File Drop Zone */}
+                  {/* [MODIFIED] File Drop Zone (No longer needs JSON input) */}
                   <div
                     {...getRootProps()}
                     className={cn(

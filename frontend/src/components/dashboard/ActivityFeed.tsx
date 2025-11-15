@@ -10,15 +10,23 @@ import {
   FileCheck,
   Copy,
   User,
-  Inbox
+  Inbox,
+  UserCheck 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge, badgeVariants } from '@/components/ui/badge'; // Import badgeVariants
+import { Badge, badgeVariants } from '@/components/ui/badge'; 
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { VariantProps } from 'class-variance-authority';
+import HashDisplay from '../common/HashDisplay'; // <-- ADDED
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from '../ui/tooltip'; // <-- ADDED
 
 // Simplified Types
 interface Activity {
@@ -31,6 +39,7 @@ interface Activity {
   recipientName?: string;
   documentType?: string;
   documentHash?: string;
+  verifiedBy?: string | null; // <-- ADDED
 }
 
 interface ActivityFeedProps {
@@ -61,21 +70,20 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     return configs[type] || { icon: FileText, color: 'text-muted-foreground', bg: 'bg-muted' };
   };
 
-  // [FIXED] This function now returns a valid Badge variant
   const getStatusVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     const statusLower = status.toLowerCase();
 
     if (statusLower === 'verified' || statusLower === 'completed' || statusLower === 'active') {
-      return "default"; // Will use primary color
+      return "default"; 
     }
     if (statusLower === 'pending' || statusLower === 'processing') {
-      return "secondary"; // Will use secondary color
+      return "secondary"; 
     }
     if (statusLower === 'failed' || statusLower === 'error' || statusLower === 'revoked') {
-      return "destructive"; // Will use destructive color
+      return "destructive"; 
     }
     
-    return 'outline'; // Default fallback
+    return 'outline'; 
   };
   
   const getDocumentTypeConfig = (docType?: string): string => {
@@ -213,7 +221,6 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
                         )}
                       </div>
                       
-                      {/* [FIXED] Status Badge now uses the variant function */}
                       <Badge 
                         variant={getStatusVariant(activity.status)}
                         className="text-xs font-normal capitalize"
@@ -256,6 +263,32 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
                         </Badge>
                       )}
                     </div>
+                    
+                    {/* --- ADDED: Verified By Display --- */}
+                    {activity.verifiedBy && activity.status === 'verified' && (
+                      <div className="flex items-center space-x-2 text-xs text-muted-foreground pt-1">
+                        <UserCheck className="w-3 h-3 text-primary" />
+                        <span className="text-primary font-medium">Verified by:</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="cursor-default">
+                                <HashDisplay 
+                                    hash={activity.verifiedBy} 
+                                    size="sm" 
+                                    variant="compact" 
+                                /> 
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Verifier: {activity.verifiedBy}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    )}
+                    {/* --- END: Verified By Display --- */}
+
                   </div>
                 </motion.div>
               );

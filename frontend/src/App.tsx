@@ -202,7 +202,7 @@ const App: React.FC = () => {
 
                 {/* Toast Notifications */}
                 <Toaster
-                  position="bottom-right"
+                  position="top-center"
                   expand={false}
                   richColors
                   toastOptions={{
