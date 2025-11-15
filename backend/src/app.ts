@@ -19,15 +19,20 @@ app.use(cors({
 // 2. Enable JSON body parsing
 app.use(express.json());
 
+// Trust proxy for google cloud
+app.set('trust proxy', 1);
+
 // 3. Enable Session Middleware
 app.use(session({
   name: 'siwe-session',
   secret: config.sessionSecret,
   resave: false,
   saveUninitialized: true,
+  proxy: true,
   cookie: { 
+    httpOnly: true,
     secure: config.nodeEnv === 'production',
-    sameSite: 'lax' 
+    sameSite: 'none' 
   },
 }));
 
