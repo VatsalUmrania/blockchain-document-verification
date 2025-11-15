@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://localhost:5000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL + "/api" || 'http://localhost:5000/api';
 
 export const SIWE_STATEMENT = 'Sign in to Blockchain Document Verification';
 
