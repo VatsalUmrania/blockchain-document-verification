@@ -5,9 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Docverify</title>
+    <!-- Matomo -->
     <script>
       var _paq = window._paq = window._paq || [];
       /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+      _paq.push(["setDocumentTitle", document.domain + "/" + document.title]);
+      _paq.push(["setCookieDomain", "*.docverify-system.vercel.app"]);
+      _paq.push(["setDomains", ["*.docverify-system.vercel.app"]]);
+      _paq.push(["setDoNotTrack", true]);
+      _paq.push(["disableCookies"]);
       _paq.push(['trackPageView']);
       _paq.push(['enableLinkTracking']);
       (function() {
@@ -18,10 +24,13 @@
         g.async=true; g.src='https://cdn.matomo.cloud/docverifysystem.matomo.cloud/matomo.js'; s.parentNode.insertBefore(g,s);
       })();
     </script>
+    <noscript><p><img referrerpolicy="no-referrer-when-downgrade" src="https://docverifysystem.matomo.cloud/matomo.php?idsite=1&amp;rec=1" style="border:0;" alt="" /></p></noscript>
+    <!-- End Matomo Code -->
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+
 
